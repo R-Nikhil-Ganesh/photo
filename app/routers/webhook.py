@@ -1,9 +1,10 @@
 import logging
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
-from app.database import SessionLocal
+from app.database import SessionLocal, get_db
 from app.schemas import ClientUploadWebhook
-from app.models import Photo, IndexedFace, Gallery
+from app.models import Photo, IndexedFace, Gallery, User
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/webhook", tags=["Webhook"])
 logger = logging.getLogger(__name__)
@@ -46,6 +47,11 @@ def process_and_index_faces(webhook_data: dict, gallery_id_str: str):
         db.close()
 
 @router.post("/cloudinary/{gallery_id}")
-def cloudinary_webhook(gallery_id: str, payload: ClientUploadWebhook, background_tasks: BackgroundTasks):
+def cloudinary_webhook(
+    gallery_id: str, 
+    payload: ClientUploadWebhook, 
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+):
     background_tasks.add_task(process_and_index_faces, payload.model_dump(), gallery_id)
     return {"status": "ok", "message": "Indexing process started."}

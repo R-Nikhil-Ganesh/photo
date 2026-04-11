@@ -1,22 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useParams, Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css'; 
 
+import { AuthProvider, useAuth } from './context/AuthContext';
 import UploadGallery from './components/UploadGallery';
 import GalleryDashboard from './components/GalleryDashboard';
 import GalleryView from './components/GalleryView';
 import SignupFlow from './components/SignupFlow';
 
-// Load your real Google Client ID
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
-
-function GalleryRoute() {
-  return <GalleryView />;
-}
 
 function Navigation() {
   const navigate = useNavigate();
@@ -34,7 +27,7 @@ function Navigation() {
             <button onClick={logout} className="btn-secondary">Logout</button>
           </div>
         ) : (
-          <button onClick={() => navigate('/signup')} className="btn-primary">Sign In / Setup AI</button>
+          <button onClick={() => navigate('/signup')} className="btn-primary">Sign In</button>
         )}
       </div>
     </nav>
@@ -42,8 +35,10 @@ function Navigation() {
 }
 
 function Home() {
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
   const navigate = useNavigate();
+
+  if (loading) return null;
 
   return (
     <div className="hero-section animate-fade-in">
@@ -62,7 +57,7 @@ function Home() {
             </div>
           ) : (
             <div className="logged-out-action">
-              <button onClick={() => navigate('/signup')} className="btn-primary">
+              <button onClick={() => navigate('/signup')} className="btn-primary hero-btn">
                 Join Now for AI Matching
               </button>
               <p className="mt-md text-muted">Already have a link? Sign in to view your photos.</p>
@@ -95,45 +90,20 @@ function Home() {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken) setToken(savedToken);
-    if (savedUser) setUser(savedUser ? JSON.parse(savedUser) : null);
-  }, []);
-
-  const login = (userData, userToken) => {
-    localStorage.setItem('token', userToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-    setToken(userToken);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setToken(null);
-    window.location.href = '/';
-  };
-
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <AuthContext.Provider value={{ user, token, login, logout }}>
+      <AuthProvider>
         <Router>
           <Navigation />
           <div className="main-content">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/signup" element={<SignupFlow />} />
-              <Route path="/gallery/:accessLink" element={<GalleryRoute />} />
+              <Route path="/gallery/:accessLink" element={<GalleryView />} />
             </Routes>
           </div>
         </Router>
-      </AuthContext.Provider>
+      </AuthProvider>
     </GoogleOAuthProvider>
   );
 }

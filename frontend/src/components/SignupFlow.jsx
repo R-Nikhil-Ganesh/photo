@@ -4,11 +4,12 @@ import * as faceapi from 'face-api.js';
 import axios from 'axios';
 import { Camera, RefreshCw, Check, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function SignupFlow() {
+  const { login } = useAuth();
   const [googleToken, setGoogleToken] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
@@ -20,7 +21,6 @@ export default function SignupFlow() {
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   useEffect(() => {
     const loadModels = async () => {
@@ -105,7 +105,6 @@ export default function SignupFlow() {
         face_encoding: faceVector
       });
 
-      // Use AuthContext to update UI state
       login(response.data.user, response.data.access_token);
       
       const searchParams = new URLSearchParams(window.location.search);
@@ -141,7 +140,6 @@ export default function SignupFlow() {
 
             <div style={{ position: 'relative', margin: 'var(--spacing-xl) 0', minHeight: '300px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
               
-              {/* Live Camera Stream */}
               {isCameraActive && (
                 <div style={{ width: '100%', height: '100%' }}>
                   <video 
@@ -162,7 +160,6 @@ export default function SignupFlow() {
                 </div>
               )}
 
-              {/* Captured Image Preview */}
               {capturedImage && !isCameraActive && (
                 <div style={{ position: 'relative', width: '100%', textAlign: 'center', padding: '20px' }}>
                   <img 
@@ -181,7 +178,6 @@ export default function SignupFlow() {
                 </div>
               )}
 
-              {/* Initial State / Start Button */}
               {!isCameraActive && !capturedImage && (
                 <div className="flex flex-col items-center gap-md">
                    <div 
