@@ -1,159 +1,160 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import { Camera, RefreshCw, Upload, Check, Loader2, X } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, Loader2, X, Image as ImageIcon } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export default function LiveBooth({ gallery }) {
+export default function GalleryUploader({ gallery }) {
   const { token } = useAuth();
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
   
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const startCamera = async () => {
-    setIsCameraActive(true);
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0 || !token) return;
+
+    setUploading(true);
+    setProgress({ current: 0, total: files.length });
+    setResults([]);
     setError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment', width: 1280, height: 720 } 
-      });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) {
-      setError("Camera access denied. Please check site permissions.");
-      setIsCameraActive(false);
-    }
-  };
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-    }
-    setIsCameraActive(false);
-  };
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
-  const captureAndUpload = async () => {
-    if (!videoRef.current || !canvasRef.current || !token) {
-        if (!token) setError("You must be logged in to upload.");
-        return;
-    }
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // 1. Capture from Canvas
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-      const image = await faceapi.bufferToImage(blob);
-      
-      // 2. Perform Face Detection Locally
-      const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors();
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setProgress(prev => ({ ...prev, current: i + 1 }));
 
-      if (detections.length === 0) {
-        throw new Error("No faces detected! Please ensure you are visible in the frame.");
-      }
+      try {
+        // 1. Process image for face detection
+        const image = await faceapi.bufferToImage(file);
+        const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors();
 
-      // 3. Upload to Cloudinary (Unsigned Preset)
-      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-      const formData = new FormData();
-      formData.append('file', blob);
-      formData.append('upload_preset', 'ml_default'); 
-
-      const cloudinaryRes = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        formData
-      );
-
-      // 4. Send Results to Backend Webhook (Now authenticated)
-      const faces = detections.map(det => ({
-        encoding: Array.from(det.descriptor),
-        box: {
-          top: det.detection.box.top,
-          right: det.detection.box.right,
-          bottom: det.detection.box.bottom,
-          left: det.detection.box.left
+        if (detections.length === 0) {
+          setResults(prev => [...prev, { name: file.name, status: 'warning', message: 'No faces found' }]);
+          continue;
         }
-      }));
 
-      await axios.post(`${API_BASE_URL}/webhook/cloudinary/${gallery.id}`, {
-        public_id: cloudinaryRes.data.public_id,
-        secure_url: cloudinaryRes.data.secure_url,
-        width: cloudinaryRes.data.width,
-        height: cloudinaryRes.data.height,
-        faces: faces
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+        // 2. Upload to Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'ml_default'); 
 
-      setCapturedImage(cloudinaryRes.data.secure_url);
-      stopCamera();
-    } catch (err) {
-      console.error(err);
-      if (err.response?.status === 401) {
-        setError("Session expired. Please log out and log back in.");
-      } else if (err.response?.data?.error?.message) {
-        setError(`Cloudinary Error: ${err.response.data.error.message}`);
-      } else {
-        setError(err.message || "Upload failed.");
+        const cloudinaryRes = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          formData
+        );
+
+        // 3. Send to Backend
+        const faces = detections.map(det => ({
+          encoding: Array.from(det.descriptor),
+          box: {
+            top: det.detection.box.top,
+            right: det.detection.box.right,
+            bottom: det.detection.box.bottom,
+            left: det.detection.box.left
+          }
+        }));
+
+        await axios.post(`${API_BASE_URL}/webhook/cloudinary/${gallery.id}`, {
+          public_id: cloudinaryRes.data.public_id,
+          secure_url: cloudinaryRes.data.secure_url,
+          width: cloudinaryRes.data.width,
+          height: cloudinaryRes.data.height,
+          faces: faces
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setResults(prev => [...prev, { name: file.name, status: 'success' }]);
+
+      } catch (err) {
+        console.error(err);
+        setResults(prev => [...prev, { name: file.name, status: 'error', message: err.message }]);
       }
-    } finally {
-      setLoading(false);
     }
+
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
     <div className="glass-panel mt-lg animate-fade-in" style={{ textAlign: 'center', maxWidth: '800px', margin: '20px auto' }}>
-      <h3 className="mb-md">Live Booth: {gallery.name}</h3>
+      <h3 className="mb-md">Upload to Folder: {gallery.name}</h3>
       
-      <div style={{ position: 'relative', background: '#000', borderRadius: 'var(--radius-md)', aspectRatio: '16/9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--glass-border)' }}>
-        {isCameraActive ? (
-          <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-        ) : capturedImage ? (
-          <img src={capturedImage} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Last shot" />
-        ) : (
-          <div className="flex flex-col items-center">
-            <Camera size={48} color="var(--primary)" className="mb-sm" />
-            <p className="text-muted">Camera ready for live capture</p>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: 'var(--radius-md)', marginTop: '15px', fontSize: '0.875rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          ⚠️ {error}
+      {!uploading && (
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          style={{ 
+            border: '2px dashed var(--glass-border)', 
+            borderRadius: 'var(--radius-lg)', 
+            padding: 'var(--spacing-2xl)', 
+            background: 'rgba(59, 130, 246, 0.05)', 
+            cursor: 'pointer',
+            transition: 'all 0.2s ease' 
+          }}
+          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--glass-border)'}
+        >
+          <UploadCloud size={48} color="var(--primary)" style={{ margin: '0 auto var(--spacing-sm)' }} />
+          <h4>Drop photos or click to upload</h4>
+          <p className="text-muted" style={{ fontSize: '0.875rem' }}>AI will scan each photo during upload.</p>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            multiple 
+            accept="image/*" 
+            style={{ display: 'none' }} 
+          />
         </div>
       )}
 
-      <div className="flex justify-center gap-md mt-lg">
-        {!isCameraActive ? (
-          <button onClick={startCamera} className="btn-primary">
-            {capturedImage ? <RefreshCw size={18} /> : null} {capturedImage ? "Take Another" : "Start Live Booth"}
-          </button>
-        ) : (
-          <div className="flex gap-sm">
-            <button onClick={captureAndUpload} className="btn-primary" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" size={18} /> : <Camera size={18} />} 
-              {loading ? " Uploading..." : " Capture & Cloud Upload"}
-            </button>
-            <button onClick={stopCamera} className="btn-secondary">
-               Cancel
-            </button>
+      {uploading && (
+        <div className="py-xl">
+          <Loader2 className="animate-spin mb-md" size={32} color="var(--primary)" style={{ margin: '0 auto' }} />
+          <h4>Processing {progress.current} of {progress.total}</h4>
+          <div style={{ width: '100%', background: 'var(--bg-input)', height: '6px', borderRadius: '3px', marginTop: '10px' }}>
+            <div style={{ width: `${(progress.current / progress.total) * 100}%`, background: 'var(--primary)', height: '100%', borderRadius: '3px', transition: 'width 0.3s' }} />
           </div>
-        )}
-      </div>
-      
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+        </div>
+      )}
+
+      {results.length > 0 && (
+        <div style={{ marginTop: 'var(--spacing-xl)', textAlign: 'left' }}>
+          <h5 className="mb-md">Upload Results</h5>
+          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            {results.map((res, idx) => (
+              <div key={idx} className="flex items-center justify-between mb-sm p-sm" style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)' }}>
+                <div className="flex items-center gap-sm">
+                   <ImageIcon size={16} className="text-muted" />
+                   <span style={{ fontSize: '0.875rem' }}>{res.name}</span>
+                </div>
+                {res.status === 'success' ? (
+                  <CheckCircle size={18} color="#10b981" />
+                ) : (
+                  <div className="flex items-center gap-xs" style={{ color: res.status === 'error' ? '#ef4444' : '#f59e0b' }}>
+                    <AlertCircle size={16} />
+                    <span style={{ fontSize: '0.75rem' }}>{res.message}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <button className="btn-secondary mt-md" onClick={() => setResults([])}>Clear List</button>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: 'var(--radius-md)', marginTop: '15px' }}>
+          ⚠️ {error}
+        </div>
+      )}
     </div>
   );
 }
