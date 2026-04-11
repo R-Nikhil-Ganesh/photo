@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, Link as LinkIcon, Loader2 } from 'lucide-react';
+import InviteGuests from './InviteGuests';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -12,7 +13,7 @@ export default function UploadGallery() {
   const createGallery = async (e) => {
     e.preventDefault();
     if (!galleryName) return;
-    
+
     setLoading(true);
     try {
       const response = await axios.post(`${API_BASE_URL}/gallery/`, {
@@ -37,13 +38,13 @@ export default function UploadGallery() {
 
         {!accessLink ? (
           <form onSubmit={createGallery}>
-            <input 
-              type="text" 
-              className="input-field" 
-              placeholder="e.g., Jane's Wedding 2024" 
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g., Jane's Wedding 2024"
               value={galleryName}
               onChange={(e) => setGalleryName(e.target.value)}
-              required 
+              required
             />
             <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
               {loading ? <Loader2 className="animate-spin" /> : 'Generate Gallery Link'}
@@ -59,10 +60,12 @@ export default function UploadGallery() {
                 {window.location.origin}/gallery/{accessLink}
               </code>
             </div>
-            
+
             <div style={{ marginTop: 'var(--spacing-xl)', paddingTop: 'var(--spacing-md)', borderTop: 'var(--glass-border)' }}>
               <p style={{ fontSize: '0.875rem' }}>Upload photos directly to Cloudinary using your preset, and they will automatically sync to this gallery using the webhook.</p>
             </div>
+            
+            <InviteGuests galleryId={accessLink} />
           </div>
         )}
       </div>

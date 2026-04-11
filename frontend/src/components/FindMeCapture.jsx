@@ -48,35 +48,35 @@ export default function FindMeCapture({ accessLink }) {
 
   const extractFaceVector = async () => {
     if (!imageRef.current) return null;
-    
+
     // Extract face descriptor using client-side WebGL
     const detection = await faceapi.detectSingleFace(imageRef.current)
       .withFaceLandmarks()
       .withFaceDescriptor();
-      
+
     if (!detection) {
       throw new Error("No face detected in the image. Please try another selfie.");
     }
-    
+
     // Convert Float32Array to standard JS Array
     return Array.from(detection.descriptor);
   };
 
   const handleSearch = async () => {
     if (!file || !modelsLoaded) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // 1. Run local ML to extract the 128 numbers
       const vector = await extractFaceVector();
-      
+
       // 2. Send only the numbers to the backend! No images uploaded.
       const response = await axios.post(`${API_BASE_URL}/search/${accessLink}`, {
         encoding: vector
       });
-      
+
       setMatchedIds(response.data.matched_public_ids);
     } catch (err) {
       console.error(err);
@@ -93,14 +93,14 @@ export default function FindMeCapture({ accessLink }) {
   return (
     <div className="container animate-fade-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
       <div className="glass-panel" style={{ maxWidth: '600px', width: '100%', textAlign: 'center' }}>
-        
+
         <h2 className="text-gradient mb-md">Find Your Photos</h2>
-        
+
         {!modelsLoaded && !error ? (
-           <div style={{ padding: 'var(--spacing-xl)', color: 'var(--text-muted)' }}>
-              <Loader2 className="animate-spin" style={{ margin: '0 auto var(--spacing-sm)' }} size={32} />
-              <p>Loading AI Models in your browser...</p>
-           </div>
+          <div style={{ padding: 'var(--spacing-xl)', color: 'var(--text-muted)' }}>
+            <Loader2 className="animate-spin" style={{ margin: '0 auto var(--spacing-sm)' }} size={32} />
+            <p>Loading AI Models in your browser...</p>
+          </div>
         ) : (
           <>
             <p>Your browser's AI will scan your face <strong>locally</strong> to find matching photos securely.</p>
@@ -108,21 +108,21 @@ export default function FindMeCapture({ accessLink }) {
             <div style={{ margin: 'var(--spacing-xl) 0' }}>
               {preview ? (
                 <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <img 
+                  <img
                     ref={imageRef}
-                    src={preview} 
-                    alt="Selfie preview" 
+                    src={preview}
+                    alt="Selfie preview"
                     crossOrigin="anonymous"
-                    style={{ 
-                      width: '200px', 
-                      height: '200px', 
-                      objectFit: 'cover', 
-                      borderRadius: 'var(--radius-full)', 
+                    style={{
+                      width: '200px',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: 'var(--radius-full)',
                       border: '4px solid var(--primary)',
                       boxShadow: 'var(--shadow-glow)'
-                    }} 
+                    }}
                   />
-                  <button 
+                  <button
                     onClick={() => { setFile(null); setPreview(null); }}
                     style={{
                       position: 'absolute',
@@ -140,7 +140,7 @@ export default function FindMeCapture({ accessLink }) {
                   </button>
                 </div>
               ) : (
-                <div 
+                <div
                   style={{
                     border: '2px dashed var(--primary)',
                     borderRadius: 'var(--radius-lg)',
@@ -159,14 +159,14 @@ export default function FindMeCapture({ accessLink }) {
                   <p className="mb-0" style={{ fontSize: '0.875rem' }}>No images are saved to our servers.</p>
                 </div>
               )}
-              
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                accept="image/*" 
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
                 capture="user"
-                style={{ display: 'none' }} 
+                style={{ display: 'none' }}
               />
             </div>
 

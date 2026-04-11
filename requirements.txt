@@ -1,8 +1,11 @@
 fastapi==0.110.0
 uvicorn==0.28.0
-sqlalchemy==2.0.28
+sqlalchemy>=2.0.30
 psycopg2-binary==2.9.9
 pgvector==0.2.5
 python-multipart==0.0.9
 pydantic-settings==2.2.1
 requests==2.31.0
+google-auth==2.28.2
+pyjwt==2.8.0
+resend==0.8.0

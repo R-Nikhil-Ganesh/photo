@@ -4,9 +4,12 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str
-    cloudinary_cloud_name: str
-    cloudinary_api_key: str
-    cloudinary_api_secret: str
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    google_client_id: str = "demo-client-id"
+    jwt_secret: str = "super-secret-key-change-in-prod"
+    resend_api_key: str = "re_demo_key"
 
     class Config:
         env_file = ".env"
