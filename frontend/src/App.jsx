@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams, Link, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import UploadGallery from './components/UploadGallery';
+import GalleryDashboard from './components/GalleryDashboard';
 import GalleryView from './components/GalleryView';
 import SignupFlow from './components/SignupFlow';
 
-// Load your real Google Client ID from the VITE_GOOGLE_CLIENT_ID environment variable
+// Load your real Google Client ID
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+// --- Auth Context for Reactivity ---
+const AuthContext = createContext(null);
+
+export const useAuth = () => useContext(AuthContext);
 
 function GalleryRoute() {
   return <GalleryView />;
@@ -14,49 +20,116 @@ function GalleryRoute() {
 
 function Navigation() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.reload();
-  };
+  const { user, token, logout } = useAuth();
 
   return (
-    <div style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 'var(--spacing-xl)', paddingRight: 'var(--spacing-xl)' }}>
-      <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-        <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }} className="text-gradient">
-          Find Me 📸
-        </h1>
+    <nav className="nav-container">
+      <Link to="/" className="nav-logo">
+        Find Me <span className="logo-icon">📸</span>
       </Link>
-      <div>
+      <div className="nav-actions">
         {token ? (
-          <div className="flex items-center gap-md">
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Welcome, {user?.name}</span>
-            <button onClick={logout} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '0.875rem' }}>Logout</button>
+          <div className="user-profile">
+            <span className="user-name">Hello, {user?.name?.split(' ')[0]}</span>
+            <button onClick={logout} className="btn-secondary logout-btn">Logout</button>
           </div>
         ) : (
-          <button onClick={() => navigate('/signup')} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.875rem' }}>Sign In / Setup AI</button>
+          <button onClick={() => navigate('/signup')} className="btn-primary login-btn">Sign In / Setup AI</button>
         )}
+      </div>
+    </nav>
+  );
+}
+
+function Home() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <div className="hero-section animate-fade-in">
+      <div className="hero-content">
+        <h1 className="hero-title text-gradient">Never Search for Your Photos Again.</h1>
+        <p className="hero-subtitle">
+          The smart group photo sharing app that uses AI to find you in every album automatically.
+        </p>
+        
+        <div className="hero-actions">
+          {token ? (
+            <div className="logged-in-action animate-slide-up">
+              <GalleryDashboard />
+            </div>
+          ) : (
+            <div className="logged-out-action">
+              <button onClick={() => navigate('/signup')} className="btn-primary hero-btn">
+                Join Now for AI Matching
+              </button>
+              <p className="mt-md secondary-text">Already have a link? Sign in to view your photos.</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="features-grid">
+        <div className="feature-card">
+          <div className="feature-icon">🤖</div>
+          <h4>AI Face Mapping</h4>
+          <p>Secure, client-side face recognition that respects your privacy.</p>
+        </div>
+        <div className="feature-card">
+          <div className="feature-icon">⚡</div>
+          <h4>Instant Search</h4>
+          <p>Find your photos across thousands of images in milliseconds.</p>
+        </div>
+        <div className="feature-card">
+          <div className="feature-icon">📦</div>
+          <h4>Auto Zip</h4>
+          <p>Download all your verified photos in one neat package.</p>
+        </div>
       </div>
     </div>
   );
 }
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (savedToken) setToken(savedToken);
+    if (savedUser) setUser(JSON.parse(savedUser));
+  }, []);
+
+  const login = (userData, userToken) => {
+    localStorage.setItem('token', userToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    setToken(userToken);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setToken(null);
+    window.location.href = '/';
+  };
+
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <Router>
-        <Navigation />
-        <main>
-          <Routes>
-            <Route path="/" element={<UploadGallery />} />
-            <Route path="/signup" element={<SignupFlow />} />
-            <Route path="/gallery/:accessLink" element={<GalleryRoute />} />
-          </Routes>
-        </main>
-      </Router>
+      <AuthContext.Provider value={{ user, token, login, logout }}>
+        <Router>
+          <Navigation />
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/signup" element={<SignupFlow />} />
+              <Route path="/gallery/:accessLink" element={<GalleryRoute />} />
+            </Routes>
+          </main>
+        </Router>
+      </AuthContext.Provider>
     </GoogleOAuthProvider>
   );
 }

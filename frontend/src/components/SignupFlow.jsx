@@ -4,6 +4,7 @@ import * as faceapi from 'face-api.js';
 import axios from 'axios';
 import { Camera, RefreshCw, Check, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../App';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -19,6 +20,7 @@ export default function SignupFlow() {
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     const loadModels = async () => {
@@ -103,8 +105,8 @@ export default function SignupFlow() {
         face_encoding: faceVector
       });
 
-      localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Use AuthContext to update UI state
+      login(response.data.user, response.data.access_token);
       
       const searchParams = new URLSearchParams(window.location.search);
       const returnTo = searchParams.get('returnTo');
