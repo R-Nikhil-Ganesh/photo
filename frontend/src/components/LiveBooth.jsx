@@ -65,7 +65,7 @@ export default function GalleryUploader({ gallery }) {
           continue;
         }
 
-        // 2. Upload to Cloudinary
+        // 2. Upload to Cloudinary (Using FETCH to avoid axios header conflicts)
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         
         if (!cloudName) {
@@ -75,17 +75,28 @@ export default function GalleryUploader({ gallery }) {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', 'ml_default'); 
-        formData.append('cloud_name', cloudName);
 
         let cloudinaryRes;
         try {
-            cloudinaryRes = await axios.post(
+            const cResponse = await fetch(
                 `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-                formData
+                {
+                    method: 'POST',
+                    body: formData,
+                }
             );
+            
+            const cData = await cResponse.json();
+            
+            if (!cResponse.ok) {
+                console.error("CLOUDINARY RAW ERROR:", cData);
+                throw new Error(cData.error?.message || "Cloudinary Upload Failed");
+            }
+            
+            cloudinaryRes = { data: cData };
         } catch (cErr) {
-            console.error("CLOUDINARY 401/ERROR:", cErr.response?.data || cErr);
-            throw new Error(`Cloudinary Error: ${cErr.response?.data?.error?.message || cErr.message}`);
+            console.error("CLOUDINARY FETCH FAIL:", cErr);
+            throw cErr;
         }
 
         // 3. Send to Backend
