@@ -67,11 +67,15 @@ export default function GalleryUploader({ gallery }) {
 
         // 2. Upload to Cloudinary
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-        console.log("Using Cloudinary Cloud Name:", cloudName);
+        
+        if (!cloudName) {
+            throw new Error("Cloudinary configuration (VITE_CLOUDINARY_CLOUD_NAME) is missing in environment!");
+        }
         
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', 'ml_default'); 
+        formData.append('cloud_name', cloudName);
 
         let cloudinaryRes;
         try {
