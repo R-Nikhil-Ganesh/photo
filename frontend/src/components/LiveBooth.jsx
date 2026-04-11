@@ -66,35 +66,41 @@ export default function GalleryUploader({ gallery }) {
         }
 
         // 2. Upload to Cloudinary
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        console.log("Using Cloudinary Cloud Name:", cloudName);
+        
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', 'ml_default'); 
 
-        const cloudinaryRes = await axios.post(
-          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-          formData
-        );
+        let cloudinaryRes;
+        try {
+            cloudinaryRes = await axios.post(
+                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+                formData
+            );
+        } catch (cErr) {
+            console.error("CLOUDINARY 401/ERROR:", cErr.response?.data || cErr);
+            throw new Error(`Cloudinary Error: ${cErr.response?.data?.error?.message || cErr.message}`);
+        }
 
         // 3. Send to Backend
-        const faces = detections.map(det => ({
-          encoding: Array.from(det.descriptor),
-          box: {
-            top: det.detection.box.top,
-            right: det.detection.box.right,
-            bottom: det.detection.box.bottom,
-            left: det.detection.box.left
-          }
-        }));
-
-        await axios.post(`${API_BASE_URL}/webhook/cloudinary/${gallery.id}`, {
-          public_id: cloudinaryRes.data.public_id,
-          secure_url: cloudinaryRes.data.secure_url,
-          width: cloudinaryRes.data.width,
-          height: cloudinaryRes.data.height,
-          faces: faces
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        console.log("Sending to Backend Webhook with Token:", token?.substring(0, 10) + "...");
+        
+        try {
+            await axios.post(`${API_BASE_URL}/webhook/cloudinary/${gallery.id}`, {
+                public_id: cloudinaryRes.data.public_id,
+                secure_url: cloudinaryRes.data.secure_url,
+                width: cloudinaryRes.data.width,
+                height: cloudinaryRes.data.height,
+                faces: faces
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (bErr) {
+            console.error("BACKEND 401/ERROR:", bErr.response?.data || bErr);
+            throw bErr;
+        }
 
         setResults(prev => [...prev, { name: file.name, status: 'success' }]);
 
