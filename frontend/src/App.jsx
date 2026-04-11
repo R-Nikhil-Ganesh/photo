@@ -2,15 +2,14 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams, Link, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import UploadGallery from './components/UploadGallery';
-import FindMeCapture from './components/FindMeCapture';
+import GalleryView from './components/GalleryView';
 import SignupFlow from './components/SignupFlow';
 
 // Put your real Google Client ID from Google Cloud Console here
 const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
 
 function GalleryRoute() {
-  const { accessLink } = useParams();
-  return <FindMeCapture accessLink={accessLink} />;
+  return <GalleryView />;
 }
 
 function Navigation() {

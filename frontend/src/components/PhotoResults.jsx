@@ -1,33 +1,61 @@
-import React from 'react';
-import { ArrowLeft, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Loader2, Link as LinkIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
-// You will need to setup the Cloudinary Advanced Image components in a real app,
-// or just construct the URL manually if you know the cloud name.
-// Assuming your cloud name setup for this demo:
-const CLOUD_NAME = 'your_cloud_name'; 
+export default function PhotoResults({ matchedUrls }) {
+  const navigate = useNavigate();
+  const [zipping, setZipping] = useState(false);
 
-export default function PhotoResults({ matchedIds, onBack }) {
-  
-  const generateCloudinaryUrl = (publicId) => {
-    // Basic Cloudinary URL construction. 
-    // Best practice is to use '@cloudinary/url-gen' library.
-    return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto,w_800/${publicId}`;
+  const downloadAllAsZip = async () => {
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      
+      // Fetch all images and add them to the zip
+      const fetchPromises = matchedUrls.map(async (url, index) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        
+        // Extract original extension or default to .jpg
+        const match = url.match(/\.([a-zA-Z0-9]+)(\?.*)?$/);
+        const ext = match ? match[1] : 'jpg';
+        
+        zip.file(`Photo_${index + 1}.${ext}`, blob);
+      });
+
+      await Promise.all(fetchPromises);
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, 'My_Event_Photos.zip');
+
+    } catch (err) {
+      console.error("Error creating Zip file:", err);
+      alert("Failed to create ZIP package. You can still download individually.");
+    } finally {
+      setZipping(false);
+    }
   };
 
   return (
     <div className="container animate-fade-in" style={{ paddingTop: 'var(--spacing-xl)' }}>
       
-      <div className="flex items-center gap-md mb-xl">
-        <button onClick={onBack} className="btn-secondary" style={{ padding: '8px' }}>
-          <ArrowLeft size={20} />
-        </button>
-        <h2 className="mb-0">Found <span className="text-gradient">{matchedIds.length}</span> Photos</h2>
+      <div className="flex items-center justify-between mb-xl">
+        <h2 className="mb-0">Found <span className="text-gradient">{matchedUrls.length}</span> Photos</h2>
+        
+        {matchedUrls.length > 0 && (
+          <button onClick={downloadAllAsZip} className="btn-primary" disabled={zipping}>
+            {zipping ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+            {zipping ? " Zipping files..." : " Download All (ZIP)"}
+          </button>
+        )}
       </div>
 
-      {matchedIds.length === 0 ? (
+      {matchedUrls.length === 0 ? (
         <div className="glass-panel text-center" style={{ marginTop: 'var(--spacing-2xl)' }}>
           <p style={{ fontSize: '1.2rem' }}>We couldn't find you in this gallery.</p>
-          <p>Try capturing your selfie again with better lighting.</p>
+          <button onClick={() => navigate('/')} className="btn-secondary mt-md">Go Back</button>
         </div>
       ) : (
         <div style={{
@@ -35,18 +63,19 @@ export default function PhotoResults({ matchedIds, onBack }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: 'var(--spacing-lg)'
         }}>
-          {matchedIds.map((id) => (
-            <div key={id} style={{
+          {matchedUrls.map((url, i) => (
+            <div key={i} style={{
               position: 'relative',
               borderRadius: 'var(--radius-md)',
               overflow: 'hidden',
               boxShadow: 'var(--shadow-sm)',
-              aspectRatio: '3/4', // Typical portrait photo ratio, adjust based on your needs
+              aspectRatio: '3/4',
               background: 'var(--bg-card)'
             }}>
               <img 
-                src={generateCloudinaryUrl(id)} 
+                src={url} 
                 alt="Matched photo" 
+                crossOrigin="anonymous" /* Crucial for JSZip to read the canvas/blob */
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
               />
               <div style={{
@@ -55,16 +84,24 @@ export default function PhotoResults({ matchedIds, onBack }) {
                 padding: 'var(--spacing-md)',
                 background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
                 display: 'flex',
-                justifyContent: 'flex-end'
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
                 <a 
-                  href={generateCloudinaryUrl(id)} 
+                  href={url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{ color: 'white' }}
+                >
+                  <LinkIcon size={18} />
+                </a>
+                <a 
+                  href={url} 
                   download 
                   target="_blank" 
                   rel="noreferrer"
                   className="btn-primary" 
                   style={{ padding: '8px', borderRadius: 'var(--radius-full)' }}
-                  title="Download"
                 >
                   <Download size={18} />
                 </a>

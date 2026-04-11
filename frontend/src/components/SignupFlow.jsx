@@ -69,11 +69,13 @@ export default function SignupFlow() {
         face_encoding: faceVector
       });
 
-      // Save token (in a real app, use Context/State manager)
+      // Save token
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      navigate('/');
+      const searchParams = new URLSearchParams(window.location.search);
+      const returnTo = searchParams.get('returnTo');
+      navigate(returnTo || '/');
     } catch (err) {
       setError(err.message || err.response?.data?.detail || "Authentication failed.");
     } finally {
