@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { UploadCloud, CheckCircle, AlertCircle, Loader2, X, Image as ImageIcon } from 'lucide-react';
 import * as faceapi from 'face-api.js';
