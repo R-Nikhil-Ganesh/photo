@@ -2,14 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import gallery, webhook, search, auth
-from app.services.cloudinary_service import init_cloudinary
 from sqlalchemy import text
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
-# Initialize Cloudinary
-init_cloudinary()
 
 # Setup Vector extension manually using raw SQL before tables are created
 try:
