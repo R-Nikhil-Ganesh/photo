@@ -12,12 +12,37 @@ export default function GalleryUploader({ gallery }) {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
   
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const MODEL_URL = '/models';
+        if (!faceapi.nets.ssdMobilenetv1.params) {
+          await Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+          ]);
+        }
+        setModelsLoaded(true);
+      } catch (err) {
+        console.error("AI model load failed", err);
+        setError("Failed to initialize AI face scanner.");
+      }
+    };
+    loadModels();
+  }, []);
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0 || !token) return;
+    if (!modelsLoaded) {
+      setError("AI models still loading. Please wait a moment.");
+      return;
+    }
 
     setUploading(true);
     setProgress({ current: 0, total: files.length });
