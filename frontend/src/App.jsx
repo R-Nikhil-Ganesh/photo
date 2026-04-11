@@ -5,8 +5,8 @@ import UploadGallery from './components/UploadGallery';
 import GalleryView from './components/GalleryView';
 import SignupFlow from './components/SignupFlow';
 
-// Put your real Google Client ID from Google Cloud Console here
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+// Load your real Google Client ID from the VITE_GOOGLE_CLIENT_ID environment variable
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function GalleryRoute() {
   return <GalleryView />;
