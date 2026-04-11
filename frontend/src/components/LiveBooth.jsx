@@ -99,7 +99,18 @@ export default function GalleryUploader({ gallery }) {
             throw cErr;
         }
 
-        // 3. Send to Backend
+        // 3. Format face vectors for backend
+        const faces = detections.map(det => ({
+            encoding: Array.from(det.descriptor),
+            box: {
+                top: det.detection.box.top,
+                right: det.detection.box.right,
+                bottom: det.detection.box.bottom,
+                left: det.detection.box.left
+            }
+        }));
+
+        // 4. Send to Backend
         console.log("Sending to Backend Webhook with Token:", token?.substring(0, 10) + "...");
         
         try {
