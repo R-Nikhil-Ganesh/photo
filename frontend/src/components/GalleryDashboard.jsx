@@ -59,17 +59,17 @@ export default function GalleryDashboard() {
         </div>
       ) : (
         <div className="animate-fade-in">
-          <div className="flex items-center justify-between mb-xl">
+          <div className="dashboard-header">
             <h2 className="mb-0">Your Folders</h2>
             <form onSubmit={createGallery} className="flex gap-sm">
               <input 
-                className="btn-secondary" 
+                className="input-field" 
                 placeholder="New Folder Name" 
                 value={newGalleryName} 
                 onChange={e => setNewGalleryName(e.target.value)} 
-                style={{ background: 'var(--bg-input)', border: 'none', padding: '10px 15px' }}
+                style={{ background: 'var(--bg-input)', border: 'none', padding: '10px 15px', color: 'white', borderRadius: 'var(--radius-md)', margin: 0 }}
               />
-              <button className="btn-primary" disabled={creating}>
+              <button className="btn-primary" disabled={creating} style={{ padding: '10px 20px' }}>
                 <Plus size={18} /> {creating ? 'Creating...' : 'Create'}
               </button>
             </form>
