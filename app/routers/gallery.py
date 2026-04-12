@@ -56,3 +56,14 @@ def get_gallery_photos(
         raise HTTPException(status_code=403, detail="Not authorized to view entire gallery")
 
     return [{"url": p.url, "id": str(p.id)} for p in gallery.photos]
+
+@router.get("/public/{access_link}")
+def get_public_gallery_photos(access_link: str, db: Session = Depends(get_db)):
+    gallery = db.query(Gallery).filter(Gallery.access_link == access_link).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+    
+    return {
+        "name": gallery.name,
+        "photos": [{"url": p.url, "id": str(p.id)} for p in gallery.photos]
+    }
