@@ -56,6 +56,10 @@ def cloudinary_webhook(
     # Check image count limit
     db = SessionLocal()
     try:
+        gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
+        if not gallery or gallery.owner_id is None:
+            return {"status": "error", "message": "Gallery not found or is a read-only demo."}
+            
         photo_count = db.query(Photo).filter(Photo.gallery_id == gallery_id).count()
         if photo_count >= 200:
             return {"status": "error", "message": "Gallery full. Max 200 photos."}

@@ -234,8 +234,11 @@ export default function GalleryView() {
                   const [top, right, bottom, left] = f.bounding_box;
                   const w = right - left;
                   const h = bottom - top;
-                  // Try to apply native cloudinary crop
+                  // Use precise coordinates for user-uploaded photos
                   avatarSrc = f.avatar_url.replace('/upload/', `/upload/c_crop,x_${Math.max(0, left)},y_${Math.max(0, top)},w_${w},h_${h}/w_100,h_100,c_fill/`);
+              } else if (f.avatar_url.includes('/upload/')) {
+                  // Fallback to Cloudinary AI Face Detection (perfect for clean portraits/samples)
+                  avatarSrc = f.avatar_url.replace('/upload/', '/upload/c_thumb,g_face,w_100,h_100,q_auto/');
               }
 
               const isSelected = selectedFaceUrl === f.avatar_url;
