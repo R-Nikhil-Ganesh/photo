@@ -131,21 +131,50 @@ export default function GalleryView() {
 
         <div className="flex gap-sm w-full md:w-auto">
           {token ? (
-            <button 
-              onClick={() => {
-                  if (!isFiltered) {
-                      setMatchedUrls(myMatchedUrls);
-                      setSelectedFaceUrl(null);
-                      setIsFiltered(true);
-                  } else {
-                      setIsFiltered(false);
-                      setSelectedFaceUrl(null);
-                  }
-              }} 
-              className={`btn-${isFiltered ? 'primary' : 'secondary'} flex items-center gap-xs flex-1 md:flex-initial`}
-            >
-              <Filter size={18} /> {isFiltered ? "Showing My Photos" : "Filter My Photos"}
-            </button>
+            <div className="flex flex-col items-center">
+              {myMatchedUrls.length > 0 ? (
+                <button 
+                  onClick={() => {
+                      if (!isFiltered) {
+                          setMatchedUrls(myMatchedUrls);
+                          setSelectedFaceUrl(null);
+                          setIsFiltered(true);
+                      } else {
+                          setIsFiltered(false);
+                          setSelectedFaceUrl(null);
+                      }
+                  }} 
+                  title={isFiltered ? "Show All Photos" : "Show My Photos"}
+                  style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    padding: 0,
+                    border: isFiltered ? '3px solid var(--primary)' : '2px solid transparent',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    transition: 'all 0.2s',
+                    opacity: isFiltered ? 1 : 0.6,
+                    boxShadow: isFiltered ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none'
+                  }}
+                >
+                  <img 
+                    src={myMatchedUrls[0].replace('/upload/', '/upload/c_thumb,g_face,w_100,h_100/')} 
+                    alt="My Face" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </button>
+              ) : (
+                <button 
+                  disabled
+                  className="btn-secondary"
+                  title="No matches found for you"
+                >
+                  <User size={18} /> No Matches
+                </button>
+              )}
+            </div>
           ) : (
             <button onClick={() => navigate(`/signup?returnTo=/gallery/${accessLink}`)} className="btn-primary flex items-center gap-xs flex-1">
               <User size={18} /> Sign In to Find Your Face
@@ -262,16 +291,23 @@ export default function GalleryView() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
-          {displayedPhotos.map((photo) => (
-            <div key={photo.id} className="gallery-item group">
-              <img src={photo.url} alt="Event" className="gallery-img" loading="lazy" />
-              <div className="gallery-overlay">
-                 <button onClick={() => saveAs(photo.url, 'photo.jpg')} className="btn-icon bg-glass rounded-full p-xs">
-                    <Download size={16} />
-                 </button>
+          {displayedPhotos.map((photo) => {
+            // Display a smaller, optimized version for the gallery grid
+            const displayUrl = photo.url.includes('/upload/') 
+               ? photo.url.replace('/upload/', '/upload/c_fill,w_500,h_500,q_auto/') 
+               : photo.url;
+               
+            return (
+              <div key={photo.id} className="gallery-item group">
+                <img src={displayUrl} alt="Event" className="gallery-img" loading="lazy" />
+                <div className="gallery-overlay">
+                   <button onClick={() => saveAs(photo.url, 'photo.jpg')} title="Download Full Size" className="btn-icon bg-glass rounded-full p-xs">
+                      <Download size={16} />
+                   </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
