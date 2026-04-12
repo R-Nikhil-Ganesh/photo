@@ -63,7 +63,7 @@ export default function GalleryDashboard() {
 
   const deleteGallery = async (gallery) => {
     try {
-      await axios.delete(`${API_BASE_URL}/gallery/${gallery.id}`, {
+      await axios.delete(`${API_BASE_URL}/gallery/delete/${gallery.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setConfirmDelete(null);

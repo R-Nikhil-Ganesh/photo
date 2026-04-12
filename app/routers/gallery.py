@@ -10,7 +10,7 @@ from typing import List
 router = APIRouter(prefix="/gallery", tags=["Gallery"])
 
 
-@router.delete("/{gallery_id}")
+@router.delete("/delete/{gallery_id}")
 def delete_gallery(
     gallery_id: str,
     db: Session = Depends(get_db),
