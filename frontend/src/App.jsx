@@ -29,7 +29,7 @@ function Navigation() {
           {token ? (
             <div className="flex items-center gap-md">
               <span className="text-xs text-muted">HELLO, {user?.name?.toUpperCase()}</span>
-              <button onClick={() => navigate('/signup')} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
+              <button onClick={() => navigate('/signup?mode=update')} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
                  Update Face
               </button>
               <button onClick={logout} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>

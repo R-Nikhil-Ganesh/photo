@@ -35,8 +35,11 @@ export default function SignupFlow() {
       if (user?.has_face_encoding) {
         // User already has a face profile. They should not be here unless they came specifically for an update.
         // If they just hit the /signup path generally, let's get them back to their dashboard.
-        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-        if (!returnTo) {
+        const params = new URLSearchParams(window.location.search);
+        const returnTo = params.get('returnTo');
+        const mode = params.get('mode');
+
+        if (!returnTo && mode !== 'update') {
            navigate('/');
            return;
         }
