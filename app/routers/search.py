@@ -8,7 +8,7 @@ from app.schemas import SearchResponse
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
-DISTANCE_THRESHOLD = 0.5  # Adjust based on face model tolerance
+DISTANCE_THRESHOLD = 0.6  # Looser threshold for more matches
 
 @router.get("/{access_link}", response_model=SearchResponse)
 def search_faces_in_gallery(

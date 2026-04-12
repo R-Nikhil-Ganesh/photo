@@ -80,8 +80,34 @@ export default function SignupFlow() {
     }
   };
 
-  const handleGoogleSuccess = (credentialResponse) => {
-    setGoogleToken(credentialResponse.credential);
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const gToken = credentialResponse.credential;
+    setGoogleToken(gToken);
+    setError(null);
+
+    // 1. Try to login immediately (in case they already have a face profile)
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_BASE_URL}/auth/google`, {
+        token: gToken
+      });
+      
+      // If successful, they are an existing user. Login and redirect!
+      login(response.data.user, response.data.access_token);
+      
+      const searchParams = new URLSearchParams(window.location.search);
+      const returnTo = searchParams.get('returnTo');
+      navigate(returnTo || '/');
+    } catch (err) {
+      if (err.response?.status === 400) {
+        // This is a new user! Keep them on the page to scan face
+        console.log("New user detected, proceeding to face scan.");
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const completeSignup = async () => {
