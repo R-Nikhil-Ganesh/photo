@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Folder, ArrowRight, Camera, Copy, Check, Image as ImageIcon } from 'lucide-react';
+import { Plus, Folder, ArrowRight, Copy, Check, Image as ImageIcon, UploadCloud, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import GalleryUploader from './LiveBooth';
+import GalleryView from './GalleryView'; // We can't direct import and use easily because of useParams, but we can reuse logic or link out
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -11,18 +12,12 @@ export default function GalleryDashboard() {
   const [galleries, setGalleries] = useState([]);
   const [newGalleryName, setNewGalleryName] = useState('');
   const [activeGallery, setActiveGallery] = useState(null);
-  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [viewMode, setViewMode] = useState('manage'); // 'manage' or 'view'
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetchGalleries();
+    if (token) fetchGalleries();
   }, [token]);
-
-  useEffect(() => {
-    if (activeGallery) {
-      fetchGalleryPhotos(activeGallery.id);
-    }
-  }, [activeGallery]);
 
   const fetchGalleries = async () => {
     try {
@@ -30,17 +25,6 @@ export default function GalleryDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setGalleries(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchGalleryPhotos = async (galleryId) => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/gallery/${galleryId}/photos`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setGalleryPhotos(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -70,25 +54,28 @@ export default function GalleryDashboard() {
     <div className="container py-lg animate-fade-in">
       {!activeGallery ? (
         <>
-          <div className="flex justify-between items-center mb-xl">
-            <h2 className="text-gradient">Your Event Folders</h2>
-            <div className="flex gap-sm">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+            <div>
+              <h1 className="text-gradient">Event Management</h1>
+              <p className="text-muted">Create and manage your AI-powered photo folders.</p>
+            </div>
+            <div className="flex gap-sm w-full md:w-auto">
               <input 
                 type="text" 
-                placeholder="Folder Name (e.g. Wedding)" 
-                className="input-field" 
+                placeholder="New Folder Name..." 
+                className="input-field flex-1" 
                 value={newGalleryName}
                 onChange={(e) => setNewGalleryName(e.target.value)}
               />
               <button onClick={createGallery} className="btn-primary flex items-center gap-xs">
-                <Plus size={18} /> New Folder
+                <Plus size={18} /> Create
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
             {galleries.map(g => (
-              <div key={g.id} className="glass-panel hover-card" onClick={() => setActiveGallery(g)}>
+              <div key={g.id} className="glass-panel hover-card" onClick={() => { setActiveGallery(g); setViewMode('manage'); }}>
                 <div className="flex items-start justify-between mb-md">
                   <div className="folder-icon-wrapper">
                     <Folder size={32} color="var(--primary)" />
@@ -96,55 +83,67 @@ export default function GalleryDashboard() {
                   <ArrowRight size={20} className="text-muted" />
                 </div>
                 <h3>{g.name}</h3>
-                <p className="text-muted text-sm mt-xs">Manage photos and shares</p>
+                <p className="text-muted text-sm mt-xs">Click to manage or upload</p>
               </div>
             ))}
           </div>
         </>
       ) : (
         <div className="animate-fade-in">
-          <button onClick={() => setActiveGallery(null)} className="btn-secondary mb-lg">
-            ← Back to Folders
-          </button>
-          
-          <div className="flex flex-col md:flex-row gap-lg items-start">
-            <div className="flex-1 w-full">
-               <GalleryUploader gallery={activeGallery} onUploadComplete={() => fetchGalleryPhotos(activeGallery.id)} />
-               
-               <div className="glass-panel mt-lg">
-                 <h4 className="mb-md">Share Access</h4>
-                 <div className="flex gap-sm items-center bg-dark p-sm rounded-md border border-glass">
-                   <code className="flex-1 truncate text-sm">
-                    {window.location.origin}/gallery/{activeGallery.access_link}
-                   </code>
-                   <button onClick={() => copyLink(activeGallery.access_link)} className="btn-icon">
-                     {copied ? <Check size={18} color="#10b981" /> : <Copy size={18} />}
-                   </button>
-                 </div>
-                 <p className="text-muted mt-sm text-xs">Anyone with this link can find their own photos using AI.</p>
-               </div>
-            </div>
-
-            <div className="flex-1 w-full glass-panel" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-              <h4 className="mb-md flex items-center gap-sm">
-                <ImageIcon size={20} /> Preview All Photos ({galleryPhotos.length})
-              </h4>
-              
-              {galleryPhotos.length === 0 ? (
-                <div className="text-center py-xl text-muted">
-                  <p>No photos in this folder yet.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-sm">
-                  {galleryPhotos.map(p => (
-                    <div key={p.id} className="aspect-square rounded-md overflow-hidden bg-dark">
-                      <img src={p.url} alt="Gallery item" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-lg gap-md">
+             <button onClick={() => setActiveGallery(null)} className="btn-secondary">
+               ← Main Dashboard
+             </button>
+             
+             <div className="tab-switcher bg-glass p-xs rounded-lg flex">
+                <button 
+                  onClick={() => setViewMode('manage')}
+                  className={`tab-btn ${viewMode === 'manage' ? 'active' : ''} flex items-center gap-xs px-md py-xs rounded-md`}
+                >
+                  <UploadCloud size={18} /> Manage & Upload
+                </button>
+                <button 
+                  onClick={() => window.open(`/gallery/${activeGallery.access_link}`, '_blank')}
+                  className={`tab-btn flex items-center gap-xs px-md py-xs rounded-md`}
+                >
+                  <Eye size={18} /> Open Gallery View
+                </button>
+             </div>
           </div>
+
+          {viewMode === 'manage' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-xl">
+              <div className="lg:col-span-2">
+                <GalleryUploader gallery={activeGallery} />
+              </div>
+              
+              <div className="flex flex-col gap-lg">
+                <div className="glass-panel">
+                  <h3 className="mb-md">Share Folder</h3>
+                  <div className="flex gap-sm items-center bg-dark p-sm rounded-md border border-glass mb-md">
+                    <code className="flex-1 truncate text-xs">
+                      {window.location.origin}/gallery/{activeGallery.access_link}
+                    </code>
+                    <button onClick={() => copyLink(activeGallery.access_link)} className="btn-icon">
+                      {copied ? <Check size={18} color="#10b981" /> : <Copy size={18} />}
+                    </button>
+                  </div>
+                  <p className="text-muted text-sm border-t border-glass pt-sm">
+                    Guests can use this link to see the whole folder and find themselves using AI.
+                  </p>
+                </div>
+
+                <div className="glass-panel">
+                  <h3 className="mb-md">Instructions</h3>
+                  <ul className="text-sm space-y-sm text-muted">
+                    <li>• Drag and drop or select multiple photos.</li>
+                    <li>• Wait for AI to map each photo.</li>
+                    <li>• Close the folder and revisit anytime.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
