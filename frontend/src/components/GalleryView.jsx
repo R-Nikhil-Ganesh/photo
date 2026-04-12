@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Loader2, User, Filter, Image as ImageIcon, Download } from 'lucide-react';
+import { Loader2, User, Filter, Image as ImageIcon, Download, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -121,6 +121,11 @@ export default function GalleryView() {
 
   return (
     <div className="container py-lg animate-fade-in">
+      <div className="mb-md">
+        <button onClick={() => navigate(-1)} className="btn-secondary flex items-center gap-xs" style={{ padding: '6px 12px', fontSize: '0.8rem', border: 'none', background: 'transparent', color: 'var(--text-muted)' }}>
+           <ChevronLeft size={16} /> Back
+        </button>
+      </div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
         <div>
           <h1 className="text-gradient mb-xs">{galleryName}</h1>
@@ -290,7 +295,7 @@ export default function GalleryView() {
           {isFiltered && <button onClick={() => setIsFiltered(false)} className="btn-secondary mt-lg">Show All Photos</button>}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
+        <div className="insta-grid">
           {displayedPhotos.map((photo) => {
             // Display a smaller, optimized version for the gallery grid
             const displayUrl = photo.url.includes('/upload/') 
@@ -298,11 +303,11 @@ export default function GalleryView() {
                : photo.url;
                
             return (
-              <div key={photo.id} className="gallery-item group">
+              <div key={photo.id} className="insta-item group">
                 <img src={displayUrl} alt="Event" className="gallery-img" loading="lazy" />
-                <div className="gallery-overlay">
-                   <button onClick={() => saveAs(photo.url, 'photo.jpg')} title="Download Full Size" className="btn-icon bg-glass rounded-full p-xs">
-                      <Download size={16} />
+                <div className="insta-overlay">
+                   <button onClick={() => saveAs(photo.url, 'photo.jpg')} title="Download High-Res" className="btn-download-premium">
+                      <Download size={16} /> Download
                    </button>
                 </div>
               </div>
