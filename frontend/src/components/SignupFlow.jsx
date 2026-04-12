@@ -32,9 +32,15 @@ export default function SignupFlow() {
   // to add their face photo (they came from the "Complete Profile" banner).
   useEffect(() => {
     if (token) {
+      if (user?.has_face_encoding) {
+        // User is already fully set up — they don't belong here unless they hit "Update Face" specifically
+        // But for standard navigation, we'll kick them to dashboard
+        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+        // Only redirect if NOT explicitly wanting to update (simplifying for now)
+      }
       setStage('face-capture');
     }
-  }, [token]);
+  }, [token, user]);
 
   // Load face-api.js models once on mount
   useEffect(() => {
@@ -98,25 +104,26 @@ export default function SignupFlow() {
     setLoading(true);
 
     try {
-      // Try logging in immediately (user may already exist with face)
+      // 1. Authenticate with backend (this creates the user if they don't exist)
       const response = await axios.post(`${API_BASE_URL}/auth/google`, { token: gToken });
-      login(response.data.user, response.data.access_token, response.data.has_face_encoding);
+      
+      const { user: userData, access_token, has_face_encoding } = response.data;
+      
+      // 2. Persist the session immediately
+      login(userData, access_token, has_face_encoding);
 
-      if (response.data.has_face_encoding) {
-        // Fully set up — redirect
+      // 3. Decide where to go
+      if (has_face_encoding) {
+        // User already has a face profile — let's get them to their photos!
         const returnTo = new URLSearchParams(window.location.search).get('returnTo');
         navigate(returnTo || '/');
       } else {
-        // Existing user but no face encoding — stay and capture
+        // New user or missing face — switch to the capture stage
         setStage('face-capture');
       }
     } catch (err) {
-      if (err.response?.status === 400) {
-        // Brand new user — needs face scan before account is created
-        setStage('face-capture');
-      } else {
-        setError('Login failed. Please try again.');
-      }
+      console.error(err);
+      setError('Login unsuccessful. Please try again.');
     } finally {
       setLoading(false);
     }
