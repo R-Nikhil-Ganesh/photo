@@ -36,7 +36,7 @@ export default function UploadGallery() {
           <UploadCloud size={48} color="var(--primary)" />
         </div>
         <h2 className="text-gradient">Create a Event</h2>
-        <p>Host a new gallery and generate a unique "Find Me" link for your guests.</p>
+        <p>Host a new gallery and generate a unique Framy link for your guests.</p>
 
         {!accessLink ? (
           <form onSubmit={createGallery}>

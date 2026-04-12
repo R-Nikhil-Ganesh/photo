@@ -18,7 +18,7 @@ except Exception as e:
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Find Me Photo App API")
+app = FastAPI(title="Framy API")
 
 # Configure CORS for frontend access
 app.add_middleware(
@@ -39,4 +39,4 @@ app.include_router(subscription.router)
 
 @app.get("/")
 def root():
-    return {"message": "Find Me API is running. Check /docs for documentation."}
+    return {"message": "Framy API is running. Check /docs for documentation."}

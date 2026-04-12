@@ -26,7 +26,7 @@ def send_matched_photos_email(user_email: str, gallery_name: str, photo_urls: li
 
     try:
         r = resend.Emails.send({
-            "from": "FindMe Alerts <onboarding@resend.dev>",
+            "from": "Framy Alerts <onboarding@resend.dev>",
             "to": user_email,
             "subject": f"📸 New photos found of you in {gallery_name}!",
             "html": html_content

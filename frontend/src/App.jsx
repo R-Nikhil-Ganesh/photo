@@ -22,7 +22,7 @@ function Navigation() {
     <nav className="nav-container">
       <div className="nav-inner">
         <Link to="/" className="nav-logo">
-          FIND ME
+          Framy
         </Link>
         <div className="nav-actions">
           {token ? (
@@ -55,30 +55,30 @@ function Home() {
       {!token ? (
         <section className="hero-section">
           <h1 className="hero-title text-gradient">Smart Sharing for Every Moment.</h1>
-          <p className="hero-subtitle">
+          <p className="hero-subtitle text-muted">
             A minimalist, AI-powered photo sharing engine designed for events, weddings, and high-end portfolios.
           </p>
           <div className="flex justify-center gap-md">
-            <button onClick={() => navigate('/signup')} className="btn-primary">
+            <button onClick={() => navigate('/signup')} className="btn-primary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
               Get Started
             </button>
-            <button className="btn-secondary">
+            <button className="btn-secondary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
               View Example
             </button>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-lg mt-2xl pt-xl border-t border-glass">
+          <div className="hero-features">
             <div className="feature-item">
               <h4 className="mb-xs">Face Recognition</h4>
-              <p className="text-sm text-dim">Secure client-side AI mapping for instant retrieval.</p>
+              <p className="text-sm text-dim">Secure client-side AI mapping for instant retrieval. Never scroll through 1000s of photos again.</p>
             </div>
             <div className="feature-item">
               <h4 className="mb-xs">Private Galleries</h4>
-              <p className="text-sm text-dim">Encrypted event folders with controlled public access.</p>
+              <p className="text-sm text-dim">Encrypted event folders with controlled public access. Fast, simple guest links.</p>
             </div>
             <div className="feature-item">
               <h4 className="mb-xs">Bulk Archiving</h4>
-              <p className="text-sm text-dim">High-speed processing and one-click ZIP generation.</p>
+              <p className="text-sm text-dim">High-speed processing and one-click ZIP generation for photographers to deliver clients their matches instantly.</p>
             </div>
           </div>
         </section>
