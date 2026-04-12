@@ -17,18 +17,20 @@ function Navigation() {
 
   return (
     <nav className="nav-container">
-      <Link to="/" className="nav-logo">
-        Find Me <span className="logo-icon">📸</span>
-      </Link>
-      <div className="nav-actions">
-        {token ? (
-          <div className="user-profile">
-            <span className="user-name">Hello, {user?.name?.split(' ')[0]}</span>
-            <button onClick={logout} className="btn-secondary">Logout</button>
-          </div>
-        ) : (
-          <button onClick={() => navigate('/signup')} className="btn-primary">Sign In</button>
-        )}
+      <div className="nav-inner">
+        <Link to="/" className="nav-logo">
+          FIND ME
+        </Link>
+        <div className="nav-actions">
+          {token ? (
+            <div className="flex items-center gap-md">
+              <span className="text-xs text-muted">HELLO, {user?.name?.toUpperCase()}</span>
+              <button onClick={logout} className="btn-secondary">Logout</button>
+            </div>
+          ) : (
+            <button onClick={() => navigate('/signup')} className="btn-primary">Sign In</button>
+          )}
+        </div>
       </div>
     </nav>
   );

@@ -142,26 +142,15 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
   };
 
   return (
-    <div className="glass-panel mt-lg animate-fade-in" style={{ textAlign: 'center', maxWidth: '800px', margin: '20px auto' }}>
-      <h3 className="mb-md">Upload to Folder: {gallery.name}</h3>
-      
+    <div className="fade">
       {!uploading && (
         <div 
           onClick={() => fileInputRef.current?.click()}
-          style={{ 
-            border: '2px dashed var(--glass-border)', 
-            borderRadius: 'var(--radius-lg)', 
-            padding: 'var(--spacing-2xl)', 
-            background: 'rgba(59, 130, 246, 0.05)', 
-            cursor: 'pointer',
-            transition: 'all 0.2s ease' 
-          }}
-          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'}
-          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--glass-border)'}
+          className="upload-box"
         >
-          <UploadCloud size={48} color="var(--primary)" style={{ margin: '0 auto var(--spacing-sm)' }} />
-          <h4>Drop photos or click to upload</h4>
-          <p className="text-muted" style={{ fontSize: '0.875rem' }}>AI will scan each photo during upload.</p>
+          <UploadCloud size={24} className="text-muted mb-md" />
+          <h4 className="text-sm mb-xs">Select assets for {gallery.name}</h4>
+          <p className="text-xs text-muted">AI processing starts after selection.</p>
           <input 
             type="file" 
             ref={fileInputRef} 
