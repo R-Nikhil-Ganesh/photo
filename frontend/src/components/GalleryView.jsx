@@ -122,7 +122,7 @@ export default function GalleryView() {
   return (
     <div className="container py-lg animate-fade-in">
       <div className="mb-md">
-        <button onClick={() => navigate(-1)} className="btn-secondary flex items-center gap-xs" style={{ padding: '6px 12px', fontSize: '0.8rem', border: 'none', background: 'transparent', color: 'var(--text-muted)' }}>
+        <button onClick={() => navigate('/')} className="btn-secondary flex items-center gap-xs" style={{ padding: '6px 12px', fontSize: '0.8rem', border: 'none', background: 'transparent', color: 'var(--text-muted)' }}>
            <ChevronLeft size={16} /> Back
         </button>
       </div>
