@@ -58,15 +58,14 @@ def google_auth(
         user = db.query(User).filter(User.google_id == google_id).first()
 
         if not user:
-            # Require face_encoding for new accounts
-            if not face_encoding or len(face_encoding) != 128:
-                raise HTTPException(status_code=400, detail="Face encoding required for new accounts.")
+            # Allow account creation without face encoding (face scan is now optional)
+            validated_face = face_encoding if face_encoding and len(face_encoding) == 128 else None
             
             user = User(
                 email=email,
                 name=name,
                 google_id=google_id,
-                face_encoding=face_encoding
+                face_encoding=validated_face
             )
             db.add(user)
             db.commit()

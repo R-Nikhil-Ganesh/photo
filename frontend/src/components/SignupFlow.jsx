@@ -280,6 +280,21 @@ export default function SignupFlow() {
           }
         </button>
       )}
+
+      {/* Skip Button */}
+      {!success && (
+        <button
+          className="btn-secondary"
+          style={{ width: '100%', padding: '0.8rem', marginTop: 'var(--spacing-sm)' }}
+          onClick={() => {
+             stopCamera();
+             const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+             navigate(returnTo || '/');
+          }}
+        >
+          Skip for now
+        </button>
+      )}
     </div>
   );
 
