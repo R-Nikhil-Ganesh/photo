@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function SignupFlow() {
-  const { login, token, updateUser } = useAuth();
+  const { login, token, user, updateUser } = useAuth();
   const navigate = useNavigate();
 
   // "google-pending"  → Google verified, need face
@@ -33,14 +33,17 @@ export default function SignupFlow() {
   useEffect(() => {
     if (token) {
       if (user?.has_face_encoding) {
-        // User is already fully set up — they don't belong here unless they hit "Update Face" specifically
-        // But for standard navigation, we'll kick them to dashboard
+        // User already has a face profile. They should not be here unless they came specifically for an update.
+        // If they just hit the /signup path generally, let's get them back to their dashboard.
         const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-        // Only redirect if NOT explicitly wanting to update (simplifying for now)
+        if (!returnTo) {
+           navigate('/');
+           return;
+        }
       }
       setStage('face-capture');
     }
-  }, [token, user]);
+  }, [token, user, navigate]);
 
   // Load face-api.js models once on mount
   useEffect(() => {
