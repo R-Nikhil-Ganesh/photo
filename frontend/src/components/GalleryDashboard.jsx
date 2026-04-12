@@ -169,7 +169,7 @@ export default function GalleryDashboard() {
             </button>
             <button 
               className="switcher-btn"
-              onClick={() => window.open(`/gallery/${activeGallery.access_link}`, '_blank')}
+              onClick={() => navigate(`/gallery/${activeGallery.access_link}`)}
             >
               <Eye size={14} /> View Gallery
             </button>
