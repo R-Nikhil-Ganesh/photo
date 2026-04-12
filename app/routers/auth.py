@@ -5,7 +5,7 @@ from google.auth.transport import requests as google_requests
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db, settings
 from app.models import User
@@ -74,7 +74,31 @@ def google_auth(
 
         # Issue JWT
         access_token = create_access_token({"sub": str(user.id), "email": user.email})
-        return {"access_token": access_token, "user": {"name": user.name, "email": user.email}}
+        return {
+            "access_token": access_token,
+            "user": {"name": user.name, "email": user.email},
+            "has_face_encoding": user.face_encoding is not None and len(user.face_encoding) == 128
+        }
 
     except ValueError as e:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+@router.put("/face-encoding")
+def update_face_encoding(
+    face_encoding: List[float] = Body(..., embed=True),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Allows an existing authenticated user to save or replace their face profile.
+    Called when a user logs in but has no face encoding stored yet.
+    """
+    if not face_encoding or len(face_encoding) != 128:
+        raise HTTPException(status_code=400, detail="A valid 128-dimension face encoding is required.")
+
+    current_user.face_encoding = face_encoding
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "Face profile updated successfully.", "has_face_encoding": True}

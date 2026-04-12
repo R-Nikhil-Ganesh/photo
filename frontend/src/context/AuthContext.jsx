@@ -15,10 +15,11 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData, userToken) => {
+  const login = (userData, userToken, hasFaceEncoding = false) => {
+    const fullUser = { ...userData, has_face_encoding: hasFaceEncoding };
     localStorage.setItem('token', userToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(fullUser));
+    setUser(fullUser);
     setToken(userToken);
   };
 
@@ -30,8 +31,16 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/';
   };
 
+  const updateUser = (partial) => {
+    setUser(prev => {
+      const updated = { ...prev, ...partial };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

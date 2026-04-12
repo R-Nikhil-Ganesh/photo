@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Folder, Copy, Check, UploadCloud, Eye, ChevronLeft } from 'lucide-react';
+import { Plus, Folder, Copy, Check, UploadCloud, Eye, ChevronLeft, UserCircle2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import GalleryUploader from './LiveBooth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function GalleryDashboard() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [galleries, setGalleries] = useState([]);
   const [newGalleryName, setNewGalleryName] = useState('');
   const [activeGallery, setActiveGallery] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
     if (token) fetchGalleries();
@@ -50,6 +53,45 @@ export default function GalleryDashboard() {
 
   return (
     <div className="container fade">
+
+      {/* No-face-profile prompt banner */}
+      {!bannerDismissed && user && !user.has_face_encoding && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--spacing-md)',
+          flexWrap: 'wrap',
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid rgba(245, 158, 11, 0.35)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--spacing-sm) var(--spacing-md)',
+          marginBottom: 'var(--spacing-lg)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f59e0b' }}>
+            <UserCircle2 size={20} />
+            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>
+              Your account has no face photo yet — AI sorting won't work until you add one.
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => navigate('/signup')}
+              style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 'var(--radius-sm)', padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+            >
+              Add Face Photo
+            </button>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}
+              title="Dismiss"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {!activeGallery ? (
         <>
           <header className="page-header">
