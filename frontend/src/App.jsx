@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css'; 
@@ -48,6 +49,18 @@ function Home() {
   const { token, loading } = useAuth();
   const navigate = useNavigate();
 
+  const handleViewExample = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const res = await axios.post(`${API_URL}/samples/seed`);
+      navigate(`/gallery/${res.data.access_link}`);
+    } catch (err) {
+      console.error(err);
+      // Fallback if API fails
+      navigate('/gallery/framy-demo-sample');
+    }
+  };
+
   if (loading) return null;
 
   return (
@@ -62,7 +75,7 @@ function Home() {
             <button onClick={() => navigate('/signup')} className="btn-primary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
               Get Started
             </button>
-            <button className="btn-secondary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
+            <button onClick={handleViewExample} className="btn-secondary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
               View Example
             </button>
           </div>
