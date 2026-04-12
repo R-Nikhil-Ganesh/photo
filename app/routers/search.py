@@ -46,7 +46,7 @@ def search_faces_authenticated(
     Their 128D encoding is pulled directly from the DB — no upload needed.
     Used by GalleryView when a logged-in user wants to filter by their face.
     """
-    if not current_user.face_encoding or len(current_user.face_encoding) != 128:
+    if current_user.face_encoding is None or len(current_user.face_encoding) != 128:
         raise HTTPException(
             status_code=400,
             detail="No face profile found. Please complete your profile setup first."
