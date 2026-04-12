@@ -9,7 +9,7 @@ from app.schemas import SearchResponse, SearchRequest
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
-DISTANCE_THRESHOLD = 0.6  # Looser threshold for more matches
+DISTANCE_THRESHOLD = 0.65  # Looser threshold for more matches
 
 def _run_vector_search(db: Session, gallery_id, encoding: list) -> list:
     """
@@ -23,7 +23,7 @@ def _run_vector_search(db: Session, gallery_id, encoding: list) -> list:
         FROM photos p
         JOIN indexed_faces f ON p.id = f.photo_id
         WHERE p.gallery_id = :gallery_id
-        AND f.encoding <-> :encoding < :threshold
+        AND f.encoding <-> cast(:encoding as vector) < :threshold
     """)
 
     result = db.execute(query, {
