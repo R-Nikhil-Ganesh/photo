@@ -1,13 +1,40 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Gallery, User
+from app.models import Gallery, User, Photo, IndexedFace
 from app.schemas import GalleryCreate, GalleryResponse
 from app.routers.auth import get_current_user
 import secrets
 from typing import List
 
 router = APIRouter(prefix="/gallery", tags=["Gallery"])
+
+
+@router.delete("/{gallery_id}")
+def delete_gallery(
+    gallery_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+    if gallery.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this gallery")
+
+    # Remove Cloudinary assets and purge DB records
+    import cloudinary.uploader
+    for photo in gallery.photos:
+        try:
+            cloudinary.uploader.destroy(photo.cloudinary_public_id)
+        except Exception:
+            pass
+        db.query(IndexedFace).filter(IndexedFace.photo_id == photo.id).delete()
+
+    db.query(Photo).filter(Photo.gallery_id == gallery.id).delete(synchronize_session=False)
+    db.delete(gallery)
+    db.commit()
+    return {"message": "Gallery deleted"}
 
 @router.post("/", response_model=GalleryResponse)
 def create_gallery(

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Copy, Check, ChevronLeft, UserCircle2, X } from 'lucide-react';
+import { Copy, Check, ChevronLeft, UserCircle2, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import GalleryUploader from './LiveBooth';
@@ -16,6 +16,7 @@ export default function GalleryDashboard() {
   const [copied, setCopied] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [subStatus, setSubStatus] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // gallery object to confirm delete
 
   useEffect(() => {
     if (token) {
@@ -57,6 +58,20 @@ export default function GalleryDashboard() {
       fetchStatus(); // refresh counts
     } catch (err) {
       alert(err.response?.data?.detail || "Failed to create folder");
+    }
+  };
+
+  const deleteGallery = async (gallery) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/gallery/${gallery.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConfirmDelete(null);
+      if (activeGallery?.id === gallery.id) setActiveGallery(null);
+      fetchGalleries();
+      fetchStatus();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete collection');
     }
   };
 
@@ -155,13 +170,30 @@ export default function GalleryDashboard() {
 
           <div className="folder-grid">
             {galleries.map(g => (
-              <div key={g.id} className="folder-card" onClick={() => setActiveGallery(g)}>
+              <div key={g.id} className="folder-card" onClick={() => setActiveGallery(g)} style={{ position: 'relative' }}>
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ marginBottom: '1.5rem', opacity: 0.4 }}>
                   <path d="M6 12a2 2 0 012-2h8l3 4h13a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V12z" stroke="#c9a96e" strokeWidth="1.2"/>
                 </svg>
                 <div style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.4rem' }}>{g.name}</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>View & Upload</div>
                 <div style={{ position: 'absolute', top: '2rem', right: '2rem', fontSize: '1rem', color: 'rgba(201,169,110,0.3)', transition: 'all 0.2s' }}>↗</div>
+                {/* Delete button — stops propagation so the card click doesn't fire */}
+                <button
+                  title="Delete collection"
+                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(g); }}
+                  style={{
+                    position: 'absolute', bottom: '1.2rem', right: '1.2rem',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: 'rgba(239,68,68,0.5)', padding: '4px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'color 0.2s',
+                    borderRadius: '4px',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(239,68,68,0.9)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(239,68,68,0.5)'}
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             ))}
             {subStatus?.can_create_gallery && (
@@ -244,5 +276,57 @@ export default function GalleryDashboard() {
         </div>
       )}
     </div>
+
+    {/* ── Delete Confirmation Modal ── */}
+    {confirmDelete && (
+      <div
+        onClick={() => setConfirmDelete(null)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            background: '#1a1814', border: '1px solid rgba(239,68,68,0.3)',
+            borderRadius: '12px', padding: '2rem 2.5rem', maxWidth: '400px', width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem', color: 'rgba(239,68,68,0.9)' }}>
+            <Trash2 size={18} />
+            <span style={{ fontWeight: 600, fontSize: '1rem' }}>Delete Collection</span>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.7, marginBottom: '1.75rem' }}>
+            Are you sure you want to delete <strong style={{ color: 'var(--text)' }}>{confirmDelete.name}</strong>?
+            This will permanently remove all photos and cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="btn-ghost"
+              style={{ fontSize: '0.8rem', padding: '0.5rem 1.2rem' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => deleteGallery(confirmDelete)}
+              style={{
+                background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+                color: 'rgba(239,68,68,0.9)', borderRadius: '6px',
+                padding: '0.5rem 1.2rem', fontSize: '0.8rem', cursor: 'pointer',
+                transition: 'all 0.2s', fontWeight: 500,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
+            >
+              Delete Permanently
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
