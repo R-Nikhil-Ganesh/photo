@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [token, setToken] = useState(localStorage.getItem('admin_token'));
   const [requests, setRequests] = useState([]);
+  const [historyRequests, setHistoryRequests] = useState([]);
   const [uploadingQr, setUploadingQr] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +19,19 @@ export default function AdminDashboard() {
       return;
     }
     fetchRequests();
+    fetchHistory();
   }, [token]);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/requests/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHistoryRequests(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -73,6 +86,7 @@ export default function AdminDashboard() {
          headers: { Authorization: `Bearer ${token}` }
       });
       fetchRequests(); // refresh list
+      fetchHistory(); // refresh history
     } catch (err) {
       console.error(err);
       alert(`Failed to ${action} request`);
@@ -125,6 +139,36 @@ export default function AdminDashboard() {
                            <button onClick={() => processRequest(req.id, 'reject')} className="btn-icon" style={{ background: '#ef4444', color: '#fff' }}>
                               <X size={16} /> Reject
                            </button>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+             )}
+          </div>
+
+          <div className="glass-panel md:col-span-2 md:col-start-2 mt-lg">
+             <h3 className="mb-md text-sm uppercase text-muted tracking-widest">History</h3>
+             {historyRequests.length === 0 ? (
+                <div className="p-lg text-center text-muted bg-black rounded-lg">No past requests.</div>
+             ) : (
+                <div className="flex flex-col gap-md">
+                   {historyRequests.map(req => (
+                     <div key={req.id} className="flex flex-col sm:flex-row gap-md items-start sm:items-center justify-between p-md border border-border rounded-lg bg-black">
+                        <div>
+                           <p className="font-semibold" style={{ color: 'var(--text-muted)' }}>{req.user_email}</p>
+                           <p className="text-xs text-muted">Requested Folders: {req.requested_folders}</p>
+                           <a href={req.screenshot_url} target="_blank" rel="noreferrer" className="text-xs" style={{ color: 'var(--primary)', opacity: 0.8 }}>Screenshot</a>
+                        </div>
+                        <div>
+                           <span className="text-xs" style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              background: req.status === 'approved' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              color: req.status === 'approved' ? '#10b981' : '#ef4444',
+                              fontWeight: 600
+                           }}>
+                              {req.status.toUpperCase()}
+                           </span>
                         </div>
                      </div>
                    ))}

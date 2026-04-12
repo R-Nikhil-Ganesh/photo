@@ -94,3 +94,19 @@ def reject_request(
     req.status = "rejected"
     db.commit()
     return {"message": "Rejected"}
+
+@router.get("/requests/history")
+def get_requests_history(
+    db: Session = Depends(get_db),
+    is_admin: bool = Depends(get_admin)
+):
+    # fetch all completed
+    requests = db.query(SubscriptionRequest).filter(SubscriptionRequest.status != "pending").order_by(SubscriptionRequest.id).all()
+    # attach emails
+    res = []
+    for r in requests:
+        sr = SubscriptionRequestResponse.model_validate(r)
+        if r.user:
+            sr.user_email = r.user.email
+        res.append(sr)
+    return res
