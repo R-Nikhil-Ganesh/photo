@@ -21,6 +21,10 @@ export default function GalleryView() {
   const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [noFaceProfile, setNoFaceProfile] = useState(false);
+  
+  const [galleryFaces, setGalleryFaces] = useState([]);
+  const [selectedFaceUrl, setSelectedFaceUrl] = useState(null); // tracking the clicked avatar
+  const [myMatchedUrls, setMyMatchedUrls] = useState([]); // user's own matches
 
   useEffect(() => {
     loadGalleryData();
@@ -42,6 +46,7 @@ export default function GalleryView() {
           });
           const matches = searchRes.data.matched_public_ids;
           setMatchedUrls(matches);
+          setMyMatchedUrls(matches);
           // If we found matches, keep filter on. If none, show all with a hint.
           setIsFiltered(matches.length > 0);
         } catch (sErr) {
@@ -55,6 +60,14 @@ export default function GalleryView() {
       } else {
         setIsFiltered(false);
       }
+      // 3. Fetch all faces for "Face sort"
+      try {
+          const facesRes = await axios.get(`${API_BASE_URL}/gallery/public/${accessLink}/faces`);
+          setGalleryFaces(facesRes.data || []);
+      } catch (fErr) {
+          console.error("Failed to load gallery faces", fErr);
+      }
+
     } catch (err) {
       console.error(err);
       setError(err.response?.status === 404 ? "Gallery not found." : "Failed to load gallery.");
@@ -119,7 +132,16 @@ export default function GalleryView() {
         <div className="flex gap-sm w-full md:w-auto">
           {token ? (
             <button 
-              onClick={() => setIsFiltered(!isFiltered)} 
+              onClick={() => {
+                  if (!isFiltered) {
+                      setMatchedUrls(myMatchedUrls);
+                      setSelectedFaceUrl(null);
+                      setIsFiltered(true);
+                  } else {
+                      setIsFiltered(false);
+                      setSelectedFaceUrl(null);
+                  }
+              }} 
               className={`btn-${isFiltered ? 'primary' : 'secondary'} flex items-center gap-xs flex-1 md:flex-initial`}
             >
               <Filter size={18} /> {isFiltered ? "Showing My Photos" : "Filter My Photos"}
@@ -165,6 +187,69 @@ export default function GalleryView() {
           </button>
         </div>
       )}
+
+      {/* DISTINCT FACES TRAY */}
+      {galleryFaces.length > 0 && (
+        <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+          <h4 className="mb-sm text-sm text-muted">Faces in this Gallery</h4>
+          <div style={{ display: 'flex', gap: 'var(--spacing-md)', overflowX: 'auto', paddingBottom: 'var(--spacing-sm)' }}>
+            {galleryFaces.map((f, idx) => {
+              // f.bounding_box is [top, right, bottom, left]
+              let avatarSrc = f.avatar_url;
+              if (f.bounding_box && f.avatar_url.includes('/upload/')) {
+                  const [top, right, bottom, left] = f.bounding_box;
+                  const w = right - left;
+                  const h = bottom - top;
+                  // Try to apply native cloudinary crop
+                  avatarSrc = f.avatar_url.replace('/upload/', `/upload/c_crop,x_${Math.max(0, left)},y_${Math.max(0, top)},w_${w},h_${h}/w_100,h_100,c_fill/`);
+              }
+
+              const isSelected = selectedFaceUrl === f.avatar_url;
+
+              return (
+                  <div 
+                      key={idx} 
+                      onClick={() => {
+                          if (isSelected) {
+                              setSelectedFaceUrl(null);
+                              setIsFiltered(false); // remove filter
+                          } else {
+                              setSelectedFaceUrl(f.avatar_url);
+                              setMatchedUrls(f.matched_urls);
+                              setIsFiltered(true);
+                          }
+                      }}
+                      style={{ 
+                          cursor: 'pointer', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center', 
+                          gap: '4px',
+                          flexShrink: 0,
+                          opacity: (selectedFaceUrl && !isSelected) ? 0.4 : 1,
+                          transition: 'opacity 0.2s'
+                      }}
+                  >
+                      <img 
+                          src={avatarSrc} 
+                          alt="Face" 
+                          style={{
+                              width: '64px', 
+                              height: '64px', 
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: isSelected ? '3px solid var(--primary)' : '2px solid transparent',
+                              boxShadow: 'var(--shadow-md)'
+                          }}
+                      />
+                      <span className="text-xs text-muted font-medium">{f.count} photos</span>
+                  </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
 
       {displayedPhotos.length === 0 ? (
         <div className="glass-panel text-center py-2xl">

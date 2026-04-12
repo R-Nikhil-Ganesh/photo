@@ -15,6 +15,11 @@ def create_gallery(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Check folder limits
+    gallery_count = db.query(Gallery).filter(Gallery.owner_id == current_user.id).count()
+    if gallery_count >= current_user.folder_limit:
+        raise HTTPException(status_code=403, detail="FOLDER_LIMIT_REACHED")
+
     # Generate a random unique access link
     access_link = secrets.token_urlsafe(8)
     

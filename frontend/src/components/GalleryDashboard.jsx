@@ -15,9 +15,13 @@ export default function GalleryDashboard() {
   const [activeGallery, setActiveGallery] = useState(null);
   const [copied, setCopied] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [subStatus, setSubStatus] = useState(null);
 
   useEffect(() => {
-    if (token) fetchGalleries();
+    if (token) {
+      fetchGalleries();
+      fetchStatus();
+    }
   }, [token]);
 
   const fetchGalleries = async () => {
@@ -31,6 +35,17 @@ export default function GalleryDashboard() {
     }
   };
 
+  const fetchStatus = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/subscription/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubStatus(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const createGallery = async () => {
     if (!newGalleryName) return;
     try {
@@ -39,8 +54,9 @@ export default function GalleryDashboard() {
       });
       setNewGalleryName('');
       fetchGalleries();
+      fetchStatus(); // refresh counts
     } catch (err) {
-      console.error(err);
+      alert(err.response?.data?.detail || "Failed to create folder");
     }
   };
 
@@ -98,18 +114,32 @@ export default function GalleryDashboard() {
             <div>
               <h1 className="mb-xs">Collections</h1>
               <p className="text-muted text-sm">Organize and distribute your event photography.</p>
+              {subStatus && (
+                <p style={{ fontSize: '0.75rem', color: '#555', marginTop: '4px' }}>
+                  Folders used: {subStatus.owned_galleries} / {subStatus.allowed_galleries}
+                </p>
+              )}
             </div>
+            
             <div className="flex gap-sm">
-              <input 
-                type="text" 
-                placeholder="Folder Name..." 
-                className="input-field" 
-                value={newGalleryName}
-                onChange={(e) => setNewGalleryName(e.target.value)}
-              />
-              <button onClick={createGallery} className="btn-primary">
-                New Collection
-              </button>
+              {subStatus?.can_create_gallery ? (
+                <>
+                  <input 
+                    type="text" 
+                    placeholder="Folder Name..." 
+                    className="input-field" 
+                    value={newGalleryName}
+                    onChange={(e) => setNewGalleryName(e.target.value)}
+                  />
+                  <button onClick={createGallery} className="btn-primary">
+                    New Collection
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => navigate('/subscribe')} style={{ background: '#f59e0b', color: '#000', border: 'none', padding: '8px 18px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>
+                  Upgrade Plan to Create More
+                </button>
+              )}
             </div>
           </header>
 

@@ -8,6 +8,9 @@ import UploadGallery from './components/UploadGallery';
 import GalleryDashboard from './components/GalleryDashboard';
 import GalleryView from './components/GalleryView';
 import SignupFlow from './components/SignupFlow';
+import Subscription from './components/Subscription';
+import AdminLogin from './components/AdminLogin';
+import AdminDashboard from './components/AdminDashboard';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -92,6 +95,9 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/signup" element={<SignupFlow />} />
               <Route path="/gallery/:accessLink" element={<GalleryView />} />
+              <Route path="/subscribe" element={<Subscription />} />
+              <Route path="/admin" element={<AdminLogin />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
             </Routes>
           </div>
         </Router>

@@ -30,3 +30,25 @@ class SearchRequest(BaseModel):
 
 class SearchResponse(BaseModel):
     matched_public_ids: List[str]
+
+class SubscriptionRequestCreate(BaseModel):
+    screenshot_url: str
+    requested_folders: int = 1
+
+class SubscriptionRequestResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    screenshot_url: str
+    status: str
+    requested_folders: int
+    user_email: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class AdminLogin(BaseModel):
+    username: str
+    password: str
+
+class QrUpdate(BaseModel):
+    qr_url: str

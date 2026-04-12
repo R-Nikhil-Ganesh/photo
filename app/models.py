@@ -12,6 +12,22 @@ class User(Base):
     name = Column(String)
     google_id = Column(String, unique=True, index=True)
     face_encoding = Column(Vector(128)) # The user's persistent selfie encoding
+    folder_limit = Column(Integer, default=1) # Initial limit is 1 free folder
+
+class SubscriptionRequest(Base):
+    __tablename__ = "subscription_requests"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    screenshot_url = Column(String, nullable=False)
+    status = Column(String, default="pending") # pending, approved, rejected
+    requested_folders = Column(Integer, default=1)
+    
+    user = relationship("User")
+
+class SiteSettings(Base):
+    __tablename__ = "site_settings"
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=True)
 
 class Gallery(Base):
     __tablename__ = "galleries"

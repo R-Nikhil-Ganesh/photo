@@ -53,5 +53,14 @@ def cloudinary_webhook(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ):
+    # Check image count limit
+    db = SessionLocal()
+    try:
+        photo_count = db.query(Photo).filter(Photo.gallery_id == gallery_id).count()
+        if photo_count >= 200:
+            return {"status": "error", "message": "Gallery full. Max 200 photos."}
+    finally:
+        db.close()
+
     background_tasks.add_task(process_and_index_faces, payload.model_dump(), gallery_id)
     return {"status": "ok", "message": "Indexing process started."}
