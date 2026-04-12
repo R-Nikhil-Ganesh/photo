@@ -19,6 +19,8 @@ class Gallery(Base):
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     name = Column(String, index=True)
     access_link = Column(String, unique=True, index=True)
+    
+    photos = relationship("Photo", back_populates="gallery")
 
 class GalleryInvite(Base):
     __tablename__ = "gallery_invites"
@@ -34,6 +36,9 @@ class Photo(Base):
     width = Column(Integer)
     height = Column(Integer)
     url = Column(String)
+    
+    gallery = relationship("Gallery", back_populates="photos")
+    faces = relationship("IndexedFace", back_populates="photo")
 
 class IndexedFace(Base):
     __tablename__ = "indexed_faces"
@@ -41,3 +46,5 @@ class IndexedFace(Base):
     photo_id = Column(UUID(as_uuid=True), ForeignKey("photos.id"))
     encoding = Column(Vector(128))
     bounding_box = Column(JSON) # [top, right, bottom, left]
+    
+    photo = relationship("Photo", back_populates="faces")
