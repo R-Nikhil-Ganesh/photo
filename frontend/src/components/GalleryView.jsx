@@ -20,6 +20,7 @@ export default function GalleryView() {
   const [isFiltered, setIsFiltered] = useState(true);
   const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [noFaceProfile, setNoFaceProfile] = useState(false);
 
   useEffect(() => {
     loadGalleryData();
@@ -39,12 +40,15 @@ export default function GalleryView() {
           const searchRes = await axios.get(`${API_BASE_URL}/search/${accessLink}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setMatchedUrls(searchRes.data.matched_public_ids);
-          // If we found matches, keep it filtered. If none, maybe show all.
-          if (searchRes.data.matched_public_ids.length === 0) {
-            setIsFiltered(false);
-          }
+          const matches = searchRes.data.matched_public_ids;
+          setMatchedUrls(matches);
+          // If we found matches, keep filter on. If none, show all with a hint.
+          setIsFiltered(matches.length > 0);
         } catch (sErr) {
+          if (sErr.response?.status === 400) {
+            // User exists but has no face encoding saved — prompt them
+            setNoFaceProfile(true);
+          }
           console.error("Search failed, showing all photos", sErr);
           setIsFiltered(false);
         }
@@ -136,6 +140,31 @@ export default function GalleryView() {
           </button>
         </div>
       </div>
+
+      {noFaceProfile && (
+        <div style={{
+          background: 'rgba(245, 158, 11, 0.12)',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--spacing-md)',
+          marginBottom: 'var(--spacing-lg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--spacing-md)',
+          flexWrap: 'wrap'
+        }}>
+          <p style={{ margin: 0, color: '#f59e0b', fontSize: '0.9rem' }}>
+            ⚠️ Your account has no face profile. Complete setup to enable AI face sorting.
+          </p>
+          <button
+            onClick={() => navigate(`/signup?returnTo=/gallery/${accessLink}`)}
+            style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 'var(--radius-sm)', padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+          >
+            Complete Profile →
+          </button>
+        </div>
+      )}
 
       {displayedPhotos.length === 0 ? (
         <div className="glass-panel text-center py-2xl">

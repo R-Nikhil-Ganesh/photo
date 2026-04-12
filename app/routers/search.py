@@ -1,37 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from typing import Optional
 from app.database import get_db
 from app.models import Gallery, User
 from app.routers.auth import get_current_user
-from app.schemas import SearchResponse
+from app.schemas import SearchResponse, SearchRequest
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
 DISTANCE_THRESHOLD = 0.6  # Looser threshold for more matches
 
-@router.get("/{access_link}", response_model=SearchResponse)
-def search_faces_in_gallery(
-    access_link: str, 
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+def _run_vector_search(db: Session, gallery_id, encoding: list) -> list:
     """
-    User hits this endpoint with a valid JWT.
-    We pull their 128D encoding directly from the DB and execute the pgvector search.
-    No need for them to send large arrays!
+    Common helper that executes the pgvector nearest-neighbour query.
+    Returns a list of matching photo URLs.
     """
-    if not current_user.face_encoding or len(current_user.face_encoding) != 128:
-        raise HTTPException(status_code=400, detail="User has no face encoding setup.")
+    encoding_str = f"[{','.join(map(str, encoding))}]"
 
-    gallery = db.query(Gallery).filter(Gallery.access_link == access_link).first()
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-
-    # Format array for pgvector
-    encoding_str = f"[{','.join(map(str, current_user.face_encoding))}]"
-    
-    query = text(f"""
+    query = text("""
         SELECT DISTINCT p.url
         FROM photos p
         JOIN indexed_faces f ON p.id = f.photo_id
@@ -40,12 +27,59 @@ def search_faces_in_gallery(
     """)
 
     result = db.execute(query, {
-        "gallery_id": gallery.id,
+        "gallery_id": gallery_id,
         "encoding": encoding_str,
         "threshold": DISTANCE_THRESHOLD
     })
 
-    # Return fully formatted Cloudinary URLs!
-    matched_urls = [row[0] for row in result]
+    return [row[0] for row in result]
 
+
+@router.get("/{access_link}", response_model=SearchResponse)
+def search_faces_authenticated(
+    access_link: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticated users hit this endpoint with a valid JWT.
+    Their 128D encoding is pulled directly from the DB — no upload needed.
+    Used by GalleryView when a logged-in user wants to filter by their face.
+    """
+    if not current_user.face_encoding or len(current_user.face_encoding) != 128:
+        raise HTTPException(
+            status_code=400,
+            detail="No face profile found. Please complete your profile setup first."
+        )
+
+    gallery = db.query(Gallery).filter(Gallery.access_link == access_link).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+
+    matched_urls = _run_vector_search(db, gallery.id, list(current_user.face_encoding))
+    return {"matched_public_ids": matched_urls}
+
+
+@router.post("/{access_link}", response_model=SearchResponse)
+def search_faces_guest(
+    access_link: str,
+    body: SearchRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Guest / unauthenticated flow used by FindMeCapture.
+    The frontend runs face-api.js locally and POSTs the 128D encoding here.
+    No login required — anyone with the invite link can find their photos.
+    """
+    if not body.encoding or len(body.encoding) != 128:
+        raise HTTPException(
+            status_code=400,
+            detail="A valid 128-dimension face encoding is required."
+        )
+
+    gallery = db.query(Gallery).filter(Gallery.access_link == access_link).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+
+    matched_urls = _run_vector_search(db, gallery.id, body.encoding)
     return {"matched_public_ids": matched_urls}

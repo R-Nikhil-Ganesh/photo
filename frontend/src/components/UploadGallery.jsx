@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, Link as LinkIcon, Loader2 } from 'lucide-react';
 import InviteGuests from './InviteGuests';
+import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function UploadGallery() {
+  const { token } = useAuth();
   const [galleryName, setGalleryName] = useState('');
   const [accessLink, setAccessLink] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,8 +18,8 @@ export default function UploadGallery() {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE_URL}/gallery/`, {
-        name: galleryName
+      const response = await axios.post(`${API_BASE_URL}/gallery/`, { name: galleryName }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setAccessLink(response.data.access_link);
     } catch (err) {

@@ -11,7 +11,7 @@ export default function FindMeCapture({ accessLink }) {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [matchedIds, setMatchedIds] = useState(null);
+  const [matchedUrls, setMatchedUrls] = useState(null);
   const [error, setError] = useState(null);
 
   const fileInputRef = useRef(null);
@@ -42,7 +42,7 @@ export default function FindMeCapture({ accessLink }) {
       setFile(selectedFile);
       setPreview(URL.createObjectURL(selectedFile));
       setError(null);
-      setMatchedIds(null); // Reset previous search
+      setMatchedUrls(null); // Reset previous search
     }
   };
 
@@ -77,7 +77,7 @@ export default function FindMeCapture({ accessLink }) {
         encoding: vector
       });
 
-      setMatchedIds(response.data.matched_public_ids);
+      setMatchedUrls(response.data.matched_public_ids);
     } catch (err) {
       console.error(err);
       setError(err.message || err.response?.data?.detail || "An error occurred finding your photos.");
@@ -86,8 +86,8 @@ export default function FindMeCapture({ accessLink }) {
     }
   };
 
-  if (matchedIds !== null) {
-    return <PhotoResults matchedIds={matchedIds} onBack={() => setMatchedIds(null)} />;
+  if (matchedUrls !== null) {
+    return <PhotoResults matchedUrls={matchedUrls} onBack={() => setMatchedUrls(null)} />;
   }
 
   return (
@@ -165,7 +165,6 @@ export default function FindMeCapture({ accessLink }) {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 accept="image/*"
-                capture="user"
                 style={{ display: 'none' }}
               />
             </div>
