@@ -41,49 +41,39 @@ function Home() {
   if (loading) return null;
 
   return (
-    <div className="hero-section animate-fade-in">
-      <div className="hero-content">
-        <div className="hero-text-wrapper">
-          <h1 className="hero-title text-gradient">Never Search for Your Photos Again.</h1>
+    <div className="animate-fade-in">
+      {!token ? (
+        <section className="hero-section">
+          <h1 className="hero-title text-gradient">Smart Sharing for Every Moment.</h1>
           <p className="hero-subtitle">
-            The smart group photo sharing app that uses AI to find you in every album automatically.
+            A minimalist, AI-powered photo sharing engine designed for events, weddings, and high-end portfolios.
           </p>
-        </div>
-        
-        <div className="hero-actions">
-          {token ? (
-            <div className="logged-in-action">
-              <GalleryDashboard />
+          <div className="flex justify-center gap-md">
+            <button onClick={() => navigate('/signup')} className="btn-primary">
+              Get Started
+            </button>
+            <button className="btn-secondary">
+              View Example
+            </button>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-lg mt-2xl pt-xl border-t border-glass">
+            <div className="feature-item">
+              <h4 className="mb-xs">Face Recognition</h4>
+              <p className="text-sm text-dim">Secure client-side AI mapping for instant retrieval.</p>
             </div>
-          ) : (
-            <div className="logged-out-action">
-              <button onClick={() => navigate('/signup')} className="btn-primary hero-btn">
-                Join Now for AI Matching
-              </button>
-              <p className="mt-md text-muted">Already have a link? Sign in to view your photos.</p>
+            <div className="feature-item">
+              <h4 className="mb-xs">Private Galleries</h4>
+              <p className="text-sm text-dim">Encrypted event folders with controlled public access.</p>
             </div>
-          )}
-        </div>
-      </div>
-      
-      {!token && (
-        <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">🤖</div>
-            <h4>AI Face Mapping</h4>
-            <p>Secure, client-side face recognition that respects your privacy.</p>
+            <div className="feature-item">
+              <h4 className="mb-xs">Bulk Archiving</h4>
+              <p className="text-sm text-dim">High-speed processing and one-click ZIP generation.</p>
+            </div>
           </div>
-          <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h4>Instant Search</h4>
-            <p>Find your photos across thousands of images in milliseconds.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">📦</div>
-            <h4>Auto Zip</h4>
-            <p>Download all your verified photos in one neat package.</p>
-          </div>
-        </div>
+        </section>
+      ) : (
+        <GalleryDashboard />
       )}
     </div>
   );
