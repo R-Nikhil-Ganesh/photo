@@ -72,3 +72,55 @@ def get_public_gallery_photos(access_link: str, db: Session = Depends(get_db)):
         "name": gallery.name,
         "photos": [{"url": p.url, "id": str(p.id)} for p in gallery.photos]
     }
+
+@router.get("/public/{access_link}/faces")
+def get_public_gallery_faces(access_link: str, db: Session = Depends(get_db)):
+    gallery = db.query(Gallery).filter(Gallery.access_link == access_link).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+        
+    import math
+    def l2_dist(v1, v2):
+        return math.sqrt(sum((a - b)**2 for a, b in zip(v1, v2)))
+
+    groups = []
+    
+    for photo in gallery.photos:
+        for face in photo.faces:
+            if face.encoding is None:
+                continue
+                
+            vec = list(face.encoding)
+            best_group = None
+            best_dist = 0.65
+            
+            for g in groups:
+                dist = l2_dist(g["center"], vec)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_group = g
+                    
+            if best_group:
+                best_group["matched_urls"].add(photo.url)
+                # optionally drift the center slightly, but fixed center is usually fine for small sets
+            else:
+                groups.append({
+                    "avatar_url": photo.url,
+                    "bounding_box": face.bounding_box,
+                    "matched_urls": {photo.url},
+                    "center": vec
+                })
+                
+    result = []
+    for g in groups:
+        # Only show faces that appear more than once to avoid showing random background blur faces as "people", unless the gallery is tiny
+        # Wait, if we want to act like google photos, we show distinct faces. Let's just return all for now.
+        result.append({
+            "avatar_url": g["avatar_url"],
+            "bounding_box": g["bounding_box"],
+            "matched_urls": list(g["matched_urls"]),
+            "count": len(g["matched_urls"])
+        })
+        
+    result.sort(key=lambda x: x["count"], reverse=True)
+    return result
