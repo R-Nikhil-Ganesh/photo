@@ -122,25 +122,27 @@ export default function GalleryDashboard() {
             </div>
             
             <div className="header-actions">
-              {subStatus?.can_create_gallery ? (
-                <>
-                  <input 
-                    type="text" 
-                    placeholder="Folder Name..." 
-                    className="input-field" 
-                    style={{ marginBottom: 0 }}
-                    value={newGalleryName}
-                    onChange={(e) => setNewGalleryName(e.target.value)}
-                  />
-                  <button onClick={createGallery} className="btn-primary" style={{ flex: '1 0 auto' }}>
-                    New Collection
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => navigate('/subscribe')} style={{ width: '100%', background: '#f59e0b', color: '#000', border: 'none', padding: '10px 18px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>
-                  Upgrade Plan to Create More
+              {subStatus?.can_create_gallery && (
+                <input 
+                  type="text" 
+                  placeholder="Folder Name..." 
+                  className="input-field" 
+                  style={{ marginBottom: 0 }}
+                  value={newGalleryName}
+                  onChange={(e) => setNewGalleryName(e.target.value)}
+                />
+              )}
+              {subStatus?.can_create_gallery && (
+                <button onClick={createGallery} className="btn-primary" style={{ flex: '1 0 auto' }}>
+                  New Collection
                 </button>
               )}
+              <button 
+                onClick={() => navigate('/subscribe')} 
+                style={{ flex: '1 0 auto', background: '#f59e0b', color: '#000', border: 'none', padding: '10px 18px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+              >
+                {subStatus?.can_create_gallery ? 'Upgrade Plan' : 'Upgrade Plan to Create More'}
+              </button>
             </div>
           </header>
 
