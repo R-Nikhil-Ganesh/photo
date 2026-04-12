@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db, settings
-from app.models import SubscriptionRequest, SiteSettings, User
+from app.models import SubscriptionRequest, SiteSettings, User, Gallery, Photo, IndexedFace
 from app.schemas import AdminLogin, QrUpdate, SubscriptionRequestResponse
+from app.services.cloudinary_service import cloudinary
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 
@@ -110,3 +111,70 @@ def get_requests_history(
             sr.user_email = r.user.email
         res.append(sr)
     return res
+
+
+@router.get("/stats")
+def get_stats(
+    db: Session = Depends(get_db),
+    is_admin: bool = Depends(get_admin)
+):
+    total_members = db.query(User).count()
+    subscribed = db.query(User).filter(User.folder_limit > 1).count()
+    total_photos = db.query(Photo).count()
+    total_folders = db.query(Gallery).count()
+    approved_requests = db.query(SubscriptionRequest).filter(SubscriptionRequest.status == "approved").all()
+    total_revenue = sum(r.requested_folders * 99 for r in approved_requests)  # ₹99 per folder slot
+
+    return {
+        "total_members": total_members,
+        "subscribed": subscribed,
+        "total_photos": total_photos,
+        "total_folders": total_folders,
+        "total_revenue": total_revenue,
+    }
+
+
+@router.get("/galleries")
+def get_all_galleries(
+    db: Session = Depends(get_db),
+    is_admin: bool = Depends(get_admin)
+):
+    galleries = db.query(Gallery).all()
+    result = []
+    for g in galleries:
+        owner = db.query(User).filter(User.id == g.owner_id).first()
+        result.append({
+            "id": str(g.id),
+            "name": g.name,
+            "access_link": g.access_link,
+            "owner_email": owner.email if owner else "unknown",
+            "photo_count": len(g.photos),
+        })
+    return result
+
+
+@router.delete("/galleries/{gallery_id}")
+def delete_gallery(
+    gallery_id: str,
+    db: Session = Depends(get_db),
+    is_admin: bool = Depends(get_admin)
+):
+    gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+
+    # Delete cloudinary assets
+    import cloudinary.uploader
+    for photo in gallery.photos:
+        try:
+            cloudinary.uploader.destroy(photo.cloudinary_public_id)
+        except Exception:
+            pass
+        # Delete indexed faces for this photo
+        db.query(IndexedFace).filter(IndexedFace.photo_id == photo.id).delete()
+
+    # Delete photos
+    db.query(Photo).filter(Photo.gallery_id == gallery.id).delete(synchronize_session=False)
+    db.delete(gallery)
+    db.commit()
+    return {"message": "Gallery deleted"}
