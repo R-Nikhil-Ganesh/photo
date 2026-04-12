@@ -164,6 +164,31 @@ body {
   gap: 16px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .header-actions {
+    width: auto;
+    flex-wrap: nowrap;
+  }
+}
+
+.header-actions .input-field {
+  flex: 1;
+  min-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .header-actions .input-field {
+    min-width: 240px;
+  }
+}
+
 /* Animations */
 .fade { animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
