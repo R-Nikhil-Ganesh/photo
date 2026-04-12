@@ -8,27 +8,35 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const PLANS = [
   {
+    id: 'basic',
+    name: 'Basic',
+    folders: 1,
+    price: 50,
+    features: ['1 event folder', 'Up to 200 photos', 'AI face matching', 'Shareable guest link'],
+    popular: false,
+  },
+  {
     id: 'starter',
     name: 'Starter',
-    folders: 1,
+    folders: 2,
     price: 120,
-    features: ['1 event folder', 'Up to 200 photos', 'AI face matching', 'Shareable guest link'],
+    features: ['2 event folders', 'Up to 200 photos each', 'AI face matching', 'Shareable guest links'],
     popular: false,
   },
   {
     id: 'pro',
     name: 'Pro',
-    folders: 3,
+    folders: 5,
     price: 299,
-    features: ['3 event folders', 'Up to 200 photos each', 'AI face matching', 'Shareable guest links', 'Priority support'],
+    features: ['5 event folders', 'Up to 200 photos each', 'AI face matching', 'Shareable guest links', 'Priority support'],
     popular: true,
   },
   {
     id: 'studio',
     name: 'Studio',
-    folders: 10,
+    folders: 15,
     price: 799,
-    features: ['10 event folders', 'Up to 200 photos each', 'AI face matching', 'Shareable guest links', 'Bulk ZIP downloads', 'Priority support'],
+    features: ['15 event folders', 'Up to 200 photos each', 'AI face matching', 'Shareable guest links', 'Bulk ZIP downloads', 'Priority support'],
     popular: false,
   },
 ];
