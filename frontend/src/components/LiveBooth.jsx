@@ -102,12 +102,12 @@ export default function GalleryUploader({ gallery }) {
         // 3. Format face vectors for backend
         const faces = detections.map(det => ({
             encoding: Array.from(det.descriptor),
-            box: {
-                top: det.detection.box.top,
-                right: det.detection.box.right,
-                bottom: det.detection.box.bottom,
-                left: det.detection.box.left
-            }
+            box: [
+                Math.round(det.detection.box.top),
+                Math.round(det.detection.box.right),
+                Math.round(det.detection.box.bottom),
+                Math.round(det.detection.box.left)
+            ]
         }));
 
         // 4. Send to Backend
