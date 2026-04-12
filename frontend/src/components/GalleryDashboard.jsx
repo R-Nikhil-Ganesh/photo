@@ -83,6 +83,7 @@ export default function GalleryDashboard() {
   };
 
   return (
+    <>
     <div className="container fade">
 
       {/* No-face-profile prompt banner */}
@@ -328,5 +329,6 @@ export default function GalleryDashboard() {
         </div>
       </div>
     )}
+    </>
   );
 }
