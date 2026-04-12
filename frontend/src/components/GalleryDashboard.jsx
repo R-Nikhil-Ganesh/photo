@@ -1,102 +1,149 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Folder, Plus, ChevronRight, Loader2, Camera } from 'lucide-react';
-import LiveBooth from './LiveBooth';
+import { Plus, Folder, ArrowRight, Camera, Copy, Check, Image as ImageIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import GalleryUploader from './LiveBooth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function GalleryDashboard() {
+  const { token } = useAuth();
   const [galleries, setGalleries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeGallery, setActiveGallery] = useState(null);
   const [newGalleryName, setNewGalleryName] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [activeGallery, setActiveGallery] = useState(null);
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchGalleries();
-  }, []);
+  }, [token]);
+
+  useEffect(() => {
+    if (activeGallery) {
+      fetchGalleryPhotos(activeGallery.id);
+    }
+  }, [activeGallery]);
 
   const fetchGalleries = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.get(`${API_BASE_URL}/gallery/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setGalleries(res.data);
     } catch (err) {
-      console.error("Failed to fetch galleries", err);
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
   };
 
-  const createGallery = async (e) => {
-    e.preventDefault();
-    if (!newGalleryName) return;
-    setCreating(true);
+  const fetchGalleryPhotos = async (galleryId) => {
     try {
-      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/gallery/${galleryId}/photos`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGalleryPhotos(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const createGallery = async () => {
+    if (!newGalleryName) return;
+    try {
       await axios.post(`${API_BASE_URL}/gallery/`, { name: newGalleryName }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNewGalleryName('');
       fetchGalleries();
     } catch (err) {
-      alert("Failed to create folder");
-    } finally {
-      setCreating(false);
+      console.error(err);
     }
   };
 
-  if (loading) return <Loader2 className="animate-spin" />;
+  const copyLink = (link) => {
+    const fullLink = `${window.location.origin}/gallery/${link}`;
+    navigator.clipboard.writeText(fullLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="dashboard-container">
-      {activeGallery ? (
-        <div className="animate-fade-in">
-          <button onClick={() => setActiveGallery(null)} className="btn-secondary mb-md">← Back to Folders</button>
-          <LiveBooth gallery={activeGallery} />
-        </div>
-      ) : (
-        <div className="animate-fade-in">
-          <div className="dashboard-header">
-            <h2 className="mb-0">Your Folders</h2>
-            <form onSubmit={createGallery} className="flex gap-sm">
+    <div className="container py-lg animate-fade-in">
+      {!activeGallery ? (
+        <>
+          <div className="flex justify-between items-center mb-xl">
+            <h2 className="text-gradient">Your Event Folders</h2>
+            <div className="flex gap-sm">
               <input 
+                type="text" 
+                placeholder="Folder Name (e.g. Wedding)" 
                 className="input-field" 
-                placeholder="New Folder Name" 
-                value={newGalleryName} 
-                onChange={e => setNewGalleryName(e.target.value)} 
-                style={{ background: 'var(--bg-input)', border: 'none', padding: '10px 15px', color: 'white', borderRadius: 'var(--radius-md)', margin: 0 }}
+                value={newGalleryName}
+                onChange={(e) => setNewGalleryName(e.target.value)}
               />
-              <button className="btn-primary" disabled={creating} style={{ padding: '10px 20px' }}>
-                <Plus size={18} /> {creating ? 'Creating...' : 'Create'}
+              <button onClick={createGallery} className="btn-primary flex items-center gap-xs">
+                <Plus size={18} /> New Folder
               </button>
-            </form>
+            </div>
           </div>
 
-          <div className="folders-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--spacing-lg)' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
             {galleries.map(g => (
-              <div 
-                key={g.id} 
-                className="folder-card glass-panel" 
-                style={{ cursor: 'pointer', padding: 'var(--spacing-lg)', textAlign: 'center' }}
-                onClick={() => setActiveGallery(g)}
-              >
-                <Folder size={48} color="var(--primary)" style={{ margin: '0 auto var(--spacing-sm)' }} />
-                <h4 style={{ margin: 0 }}>{g.name}</h4>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{g.access_link}</p>
-                <div className="flex items-center justify-center gap-sm mt-md text-primary" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                  <Camera size={14} /> Open Booth <ChevronRight size={14} />
+              <div key={g.id} className="glass-panel hover-card" onClick={() => setActiveGallery(g)}>
+                <div className="flex items-start justify-between mb-md">
+                  <div className="folder-icon-wrapper">
+                    <Folder size={32} color="var(--primary)" />
+                  </div>
+                  <ArrowRight size={20} className="text-muted" />
                 </div>
+                <h3>{g.name}</h3>
+                <p className="text-muted text-sm mt-xs">Manage photos and shares</p>
               </div>
             ))}
-            
-            {galleries.length === 0 && (
-              <div className="glass-panel" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 'var(--spacing-2xl)' }}>
-                <p>No folders created yet. Create one to start taking live photos!</p>
-              </div>
-            )}
+          </div>
+        </>
+      ) : (
+        <div className="animate-fade-in">
+          <button onClick={() => setActiveGallery(null)} className="btn-secondary mb-lg">
+            ← Back to Folders
+          </button>
+          
+          <div className="flex flex-col md:flex-row gap-lg items-start">
+            <div className="flex-1 w-full">
+               <GalleryUploader gallery={activeGallery} onUploadComplete={() => fetchGalleryPhotos(activeGallery.id)} />
+               
+               <div className="glass-panel mt-lg">
+                 <h4 className="mb-md">Share Access</h4>
+                 <div className="flex gap-sm items-center bg-dark p-sm rounded-md border border-glass">
+                   <code className="flex-1 truncate text-sm">
+                    {window.location.origin}/gallery/{activeGallery.access_link}
+                   </code>
+                   <button onClick={() => copyLink(activeGallery.access_link)} className="btn-icon">
+                     {copied ? <Check size={18} color="#10b981" /> : <Copy size={18} />}
+                   </button>
+                 </div>
+                 <p className="text-muted mt-sm text-xs">Anyone with this link can find their own photos using AI.</p>
+               </div>
+            </div>
+
+            <div className="flex-1 w-full glass-panel" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+              <h4 className="mb-md flex items-center gap-sm">
+                <ImageIcon size={20} /> Preview All Photos ({galleryPhotos.length})
+              </h4>
+              
+              {galleryPhotos.length === 0 ? (
+                <div className="text-center py-xl text-muted">
+                  <p>No photos in this folder yet.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-sm">
+                  {galleryPhotos.map(p => (
+                    <div key={p.id} className="aspect-square rounded-md overflow-hidden bg-dark">
+                      <img src={p.url} alt="Gallery item" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

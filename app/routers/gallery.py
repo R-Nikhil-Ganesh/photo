@@ -42,3 +42,17 @@ def get_gallery(access_link: str, db: Session = Depends(get_db)):
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
     return gallery
+@router.get("/{gallery_id}/photos")
+def get_gallery_photos(
+    gallery_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+    
+    if gallery.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view entire gallery")
+
+    return [{"url": p.url, "id": str(p.id)} for p in gallery.photos]

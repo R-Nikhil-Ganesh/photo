@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export default function GalleryUploader({ gallery }) {
+export default function GalleryUploader({ gallery, onUploadComplete }) {
   const { token } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -138,6 +138,7 @@ export default function GalleryUploader({ gallery }) {
 
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (onUploadComplete) onUploadComplete();
   };
 
   return (
