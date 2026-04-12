@@ -57,8 +57,9 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
 
       try {
         // 1. Process image for face detection
-        const image = await faceapi.bufferToImage(file);
-        const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors();
+        // Detect ALL faces aggressively (lower confidence boundary to catch background people in crowds)
+        const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3, maxResults: 500 });
+        const detections = await faceapi.detectAllFaces(image, options).withFaceLandmarks().withFaceDescriptors();
 
         if (detections.length === 0) {
           setResults(prev => [...prev, { name: file.name, status: 'warning', message: 'No faces found' }]);

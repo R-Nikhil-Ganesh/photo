@@ -92,7 +92,7 @@ def get_public_gallery_faces(access_link: str, db: Session = Depends(get_db)):
                 
             vec = list(face.encoding)
             best_group = None
-            best_dist = 0.65
+            best_dist = 0.52   # Stricter distance for distinct grouping
             
             for g in groups:
                 dist = l2_dist(g["center"], vec)
@@ -102,7 +102,11 @@ def get_public_gallery_faces(access_link: str, db: Session = Depends(get_db)):
                     
             if best_group:
                 best_group["matched_urls"].add(photo.url)
-                # optionally drift the center slightly, but fixed center is usually fine for small sets
+                
+                # Dynamically update the centroid of the cluster (Geometric Drift)
+                n = len(best_group["matched_urls"])
+                best_group["center"] = [ ((c * (n - 1)) + v) / n for c, v in zip(best_group["center"], vec) ]
+                
             else:
                 groups.append({
                     "avatar_url": photo.url,
