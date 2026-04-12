@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { QrCode, UploadCloud, Loader2, CheckCircle } from 'lucide-react';
+import { UploadCloud, Loader2, CheckCircle } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -88,52 +88,70 @@ export default function Subscription() {
     }
   };
 
-  if (loading && !qrUrl && !status) return <div className="container py-2xl text-center"><Loader2 className="animate-spin" /></div>;
+  if (loading && !qrUrl && !status) return (
+    <div className="container py-2xl text-center">
+      <Loader2 className="animate-spin" size={28} style={{ color: 'var(--gold)', margin: '0 auto' }} />
+    </div>
+  );
 
   return (
-    <div className="container py-xl animate-fade-in flex flex-col items-center">
-      <div className="glass-panel" style={{ maxWidth: '600px', width: '100%', textAlign: 'center' }}>
-        <h2 className="text-gradient">Premium Subscription</h2>
+    <div className="container animate-fade-in flex flex-col items-center" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
+      <div className="glass-panel" style={{ maxWidth: '520px', width: '100%', textAlign: 'center' }}>
+        <div className="auth-eyebrow">Subscription</div>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.9rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.6rem', lineHeight: 1.2 }}>
+          Upgrade Your Plan
+        </h2>
         
         {status === 'pending' ? (
-          <div className="py-xl">
-             <CheckCircle size={48} color="#10b981" style={{ margin: '0 auto var(--spacing-sm)' }} />
-             <h3 style={{ color: '#10b981' }}>Request Pending</h3>
-             <p className="text-muted">Your payment verification is in progress. The admin will verify your screenshot and increase your folder limits soon.</p>
-             <button onClick={() => navigate('/')} className="btn-secondary mt-md">Return to Dashboard</button>
+          <div style={{ padding: '3rem 1rem' }}>
+             <CheckCircle size={40} color="#22c55e" style={{ margin: '0 auto 12px' }} />
+             <h3 style={{ color: '#22c55e', fontSize: '1.1rem', fontWeight: 500, marginBottom: '0.8rem' }}>Request Pending</h3>
+             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 300, lineHeight: 1.7 }}>
+               Your payment verification is in progress. The admin will verify your screenshot and increase your folder limits soon.
+             </p>
+             <button onClick={() => navigate('/')} className="btn-secondary" style={{ marginTop: '1.5rem' }}>Return to Dashboard</button>
           </div>
         ) : (
           <>
-            <p className="mb-lg">Get more folders to store your event photos! 50 (currency) per folder. Limit of 200 photos per folder.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 300, lineHeight: 1.7, marginBottom: '2.5rem' }}>
+              Get more folders to store your event photos. ₹50 per folder, with a limit of 200 photos per folder.
+            </p>
             
             {qrUrl ? (
-              <div style={{ marginBottom: 'var(--spacing-xl)' }}>
-                <img src={qrUrl} alt="Payment QR" style={{ width: '250px', height: '250px', margin: '0 auto', borderRadius: 'var(--radius-md)' }} />
-                <p className="text-sm text-dim mt-sm">Scan QR to pay</p>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <img src={qrUrl} alt="Payment QR" style={{ width: '220px', height: '220px', margin: '0 auto', display: 'block' }} />
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '1rem', letterSpacing: '0.05em' }}>Scan QR to pay</p>
               </div>
             ) : (
-              <div className="py-xl text-muted flex flex-col items-center">
-                <QrCode size={48} />
-                <p>No payment QR code is set up yet.</p>
+              <div style={{ padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto 12px' }}>
+                  <rect x="6" y="6" width="14" height="14" rx="1" stroke="#c9a96e" strokeWidth="1.2"/>
+                  <rect x="28" y="6" width="14" height="14" rx="1" stroke="#c9a96e" strokeWidth="1.2"/>
+                  <rect x="6" y="28" width="14" height="14" rx="1" stroke="#c9a96e" strokeWidth="1.2"/>
+                  <rect x="30" y="30" width="4" height="4" fill="#c9a96e" opacity="0.4"/>
+                  <rect x="38" y="30" width="4" height="4" fill="#c9a96e" opacity="0.4"/>
+                  <rect x="30" y="38" width="4" height="4" fill="#c9a96e" opacity="0.4"/>
+                </svg>
+                <p style={{ fontSize: '0.85rem' }}>No payment QR code is set up yet.</p>
               </div>
             )}
 
             {qrUrl && (
-              <div style={{ padding: 'var(--spacing-md)', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)' }}>
-                <h4 className="mb-sm text-sm">Upload Payment Screenshot</h4>
+              <div style={{ padding: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                <div className="panel-label">Upload Payment Screenshot</div>
                 {!screenshotUrl ? (
                   <div>
                     <input type="file" id="screenshot-upload" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
-                    <label htmlFor="screenshot-upload" className="btn-secondary flex items-center justify-center gap-sm cursor-pointer mx-auto" style={{ maxWidth: '280px' }}>
-                      {uploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={18} />}
+                    <label htmlFor="screenshot-upload" className="btn-secondary cursor-pointer" style={{ display: 'inline-flex', justifyContent: 'center', maxWidth: '280px', margin: '0 auto' }}>
+                      {uploading ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}
                       {uploading ? 'Uploading...' : 'Choose Screenshot'}
                     </label>
                   </div>
                 ) : (
                   <div>
-                    <img src={screenshotUrl} alt="Screenshot" style={{ height: '60px', margin: '0 auto var(--spacing-sm)', borderRadius: 'var(--radius-sm)' }} />
-                    <button onClick={submitRequest} className="btn-primary flex items-center justify-center mx-auto" disabled={loading} style={{ maxWidth: '280px' }}>
-                       {loading ? <Loader2 className="animate-spin" /> : 'Submit for Verification'}
+                    <img src={screenshotUrl} alt="Screenshot" style={{ height: '60px', margin: '0 auto 12px', display: 'block' }} />
+                    <button onClick={submitRequest} className="btn-primary" style={{ display: 'flex', justifyContent: 'center', maxWidth: '280px', margin: '0 auto' }} disabled={loading}>
+                       {loading ? <Loader2 className="animate-spin" size={16} /> : 'Submit for Verification'}
                     </button>
                   </div>
                 )}

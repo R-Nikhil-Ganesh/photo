@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Loader2, User, Filter, Image as ImageIcon, Download, ChevronLeft } from 'lucide-react';
+import { Loader2, User, Download, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -103,8 +103,8 @@ export default function GalleryView() {
   if (loading) {
     return (
       <div className="container flex flex-col items-center justify-center" style={{ minHeight: '80vh' }}>
-        <Loader2 className="animate-spin mb-md" size={48} color="var(--primary)" />
-        <p>Opening {galleryName || 'Gallery'}...</p>
+        <Loader2 className="animate-spin" size={32} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Opening {galleryName || 'Gallery'}...</p>
       </div>
     );
   }
@@ -112,110 +112,115 @@ export default function GalleryView() {
   if (error) {
     return (
       <div className="container text-center py-2xl">
-        <h2 className="text-gradient">Oops!</h2>
-        <p className="mb-lg">{error}</p>
-        <button onClick={() => navigate('/')} className="btn-primary">Go Home</button>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--text)', marginBottom: '1rem' }}>Gallery Not Found</h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>{error}</p>
+        <button onClick={() => navigate('/')} className="btn-primary">Return Home</button>
       </div>
     );
   }
 
   return (
-    <div className="container py-lg animate-fade-in">
-      <div className="mb-md">
-        <button onClick={() => navigate('/')} className="btn-secondary flex items-center gap-xs" style={{ padding: '6px 12px', fontSize: '0.8rem', border: 'none', background: 'transparent', color: 'var(--text-muted)' }}>
-           <ChevronLeft size={16} /> Back
-        </button>
+    <div className="container animate-fade-in" style={{ paddingTop: '1.5rem', paddingBottom: '3rem' }}>
+      {/* Breadcrumb */}
+      <div className="page-breadcrumb">
+        <span className="bc-link" onClick={() => navigate('/')}>Home</span>
+        <span className="breadcrumb-sep">/</span>
+        <span style={{ color: 'rgba(232,228,220,0.6)' }}>{galleryName}</span>
       </div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+
+      {/* Header */}
+      <div className="page-header" style={{ borderBottom: 'none', paddingBottom: '1rem' }}>
         <div>
-          <h1 className="text-gradient mb-xs">{galleryName}</h1>
-          <p className="text-sm text-muted">
-            Viewing {displayedPhotos.length} of {allPhotos.length} photos
-          </p>
+          <div className="page-eyebrow">Gallery</div>
+          <h1 className="page-title">{galleryName}</h1>
+          <div className="page-sub">
+            {displayedPhotos.length} of {allPhotos.length} photos
+            {isFiltered && ' · Filtered by face'}
+          </div>
         </div>
 
-        <div className="flex gap-sm w-full md:w-auto">
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           {token ? (
-            <div className="flex flex-col items-center">
-              {myMatchedUrls.length > 0 ? (
-                <button 
-                  onClick={() => {
-                      if (!isFiltered) {
-                          setMatchedUrls(myMatchedUrls);
-                          setSelectedFaceUrl(null);
-                          setIsFiltered(true);
-                      } else {
-                          setIsFiltered(false);
-                          setSelectedFaceUrl(null);
-                      }
-                  }} 
-                  title={isFiltered ? "Show All Photos" : "Show My Photos"}
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    padding: 0,
-                    border: isFiltered ? '3px solid var(--primary)' : '2px solid transparent',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    transition: 'all 0.2s',
-                    opacity: isFiltered ? 1 : 0.6,
-                    boxShadow: isFiltered ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none'
-                  }}
-                >
-                  <img 
-                    src={myMatchedUrls[0].replace('/upload/', '/upload/c_thumb,g_face,w_100,h_100/')} 
-                    alt="My Face" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </button>
-              ) : (
-                <button 
-                  disabled
-                  className="btn-secondary"
-                  title="No matches found for you"
-                >
-                  <User size={18} /> No Matches
-                </button>
-              )}
-            </div>
+            myMatchedUrls.length > 0 ? (
+              <button 
+                onClick={() => {
+                    if (!isFiltered) {
+                        setMatchedUrls(myMatchedUrls);
+                        setSelectedFaceUrl(null);
+                        setIsFiltered(true);
+                    } else {
+                        setIsFiltered(false);
+                        setSelectedFaceUrl(null);
+                    }
+                }} 
+                title={isFiltered ? "Show All Photos" : "Show My Photos"}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  padding: 0,
+                  border: isFiltered ? '2px solid var(--gold)' : '1px solid var(--border-strong)',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s',
+                  opacity: isFiltered ? 1 : 0.6,
+                }}
+              >
+                <img 
+                  src={myMatchedUrls[0].replace('/upload/', '/upload/c_thumb,g_face,w_100,h_100/')} 
+                  alt="My Face" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </button>
+            ) : (
+              <button 
+                disabled
+                className="btn-secondary"
+                style={{ fontSize: '0.75rem', padding: '0.4rem 1rem' }}
+                title="No matches found for you"
+              >
+                <User size={16} /> No Matches
+              </button>
+            )
           ) : (
-            <button onClick={() => navigate(`/signup?returnTo=/gallery/${accessLink}`)} className="btn-primary flex items-center gap-xs flex-1">
-              <User size={18} /> Sign In to Find Your Face
+            <button onClick={() => navigate(`/signup?returnTo=/gallery/${accessLink}`)} className="btn-primary" style={{ fontSize: '0.78rem' }}>
+              <User size={16} /> Sign In to Find Your Face
             </button>
           )}
           
           <button 
             onClick={downloadAll} 
             disabled={downloading || displayedPhotos.length === 0}
-            className="btn-secondary flex items-center gap-xs flex-1 md:flex-initial"
+            className="btn-secondary"
+            style={{ fontSize: '0.75rem', padding: '0.5rem 1rem' }}
           >
-            {downloading ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
-            {downloading ? "Zipping..." : "Download All"}
+            {downloading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+            {downloading ? "Zipping..." : "↓ Download All"}
           </button>
         </div>
       </div>
 
+      {/* No face profile banner */}
       {noFaceProfile && (
         <div style={{
-          background: 'rgba(245, 158, 11, 0.12)',
-          border: '1px solid rgba(245, 158, 11, 0.4)',
-          borderRadius: 'var(--radius-md)',
-          padding: 'var(--spacing-md)',
-          marginBottom: 'var(--spacing-lg)',
+          background: 'rgba(201,169,110,0.06)',
+          border: '1px solid rgba(201,169,110,0.25)',
+          padding: '14px 20px',
+          marginBottom: '2rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 'var(--spacing-md)',
+          gap: '16px',
           flexWrap: 'wrap'
         }}>
-          <p style={{ margin: 0, color: '#f59e0b', fontSize: '0.9rem' }}>
-            ⚠️ Your account has no face profile. Complete setup to enable AI face sorting.
+          <p style={{ margin: 0, color: 'var(--gold)', fontSize: '0.85rem', fontWeight: 400 }}>
+            Your account has no face profile. Complete setup to enable AI face sorting.
           </p>
           <button
             onClick={() => navigate(`/signup?returnTo=/gallery/${accessLink}`)}
-            style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 'var(--radius-sm)', padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+            className="btn-primary"
+            style={{ fontSize: '0.75rem', padding: '0.4rem 1rem' }}
           >
             Complete Profile →
           </button>
@@ -224,9 +229,9 @@ export default function GalleryView() {
 
       {/* DISTINCT FACES TRAY */}
       {galleryFaces.length > 0 && (
-        <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-          <h4 className="mb-sm text-sm text-muted">Faces in this Gallery</h4>
-          <div style={{ display: 'flex', gap: 'var(--spacing-md)', overflowX: 'auto', paddingBottom: 'var(--spacing-sm)' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <div className="panel-label" style={{ marginBottom: '1rem' }}>Faces in this Gallery</div>
+          <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '8px' }}>
             {galleryFaces.map((f, idx) => {
               // f.bounding_box is [top, right, bottom, left]
               let avatarSrc = f.avatar_url;
@@ -261,9 +266,9 @@ export default function GalleryView() {
                           display: 'flex', 
                           flexDirection: 'column', 
                           alignItems: 'center', 
-                          gap: '4px',
+                          gap: '6px',
                           flexShrink: 0,
-                          opacity: (selectedFaceUrl && !isSelected) ? 0.4 : 1,
+                          opacity: (selectedFaceUrl && !isSelected) ? 0.35 : 1,
                           transition: 'opacity 0.2s'
                       }}
                   >
@@ -271,15 +276,15 @@ export default function GalleryView() {
                           src={avatarSrc} 
                           alt="Face" 
                           style={{
-                              width: '64px', 
-                              height: '64px', 
+                              width: '56px', 
+                              height: '56px', 
                               borderRadius: '50%',
                               objectFit: 'cover',
-                              border: isSelected ? '3px solid var(--primary)' : '2px solid transparent',
-                              boxShadow: 'var(--shadow-md)'
+                              border: isSelected ? '2px solid var(--gold)' : '1px solid var(--border-strong)',
+                              transition: 'border-color 0.2s'
                           }}
                       />
-                      <span className="text-xs text-muted font-medium">{f.count} photos</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>{f.count} photos</span>
                   </div>
               );
             })}
@@ -289,13 +294,29 @@ export default function GalleryView() {
 
 
       {displayedPhotos.length === 0 ? (
-        <div className="glass-panel text-center py-2xl">
-          <ImageIcon size={48} className="text-muted mb-md" style={{ margin: '0 auto' }} />
-          <h3>No photos found</h3>
-          <p className="text-muted">
-            {isFiltered ? "AI couldn't find your face in this album." : "This gallery is empty."}
-          </p>
-          {isFiltered && <button onClick={() => setIsFiltered(false)} className="btn-secondary mt-lg">Show All Photos</button>}
+        <div className="gallery-empty">
+          <div className="empty-illustration">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+              <rect x="10" y="20" width="60" height="48" rx="2" stroke="#c9a96e" strokeWidth="1.2"/>
+              <circle cx="28" cy="36" r="6" stroke="#c9a96e" strokeWidth="1"/>
+              <path d="M10 56l18-14 14 10 10-8 18 12" stroke="#c9a96e" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="58" cy="14" r="8" fill="none" stroke="#c9a96e" strokeWidth="1" strokeDasharray="2 2"/>
+              <path d="M58 10v8M54 14h8" stroke="#c9a96e" strokeWidth="1" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="empty-title">
+            {isFiltered ? "No face matches found" : "This gallery is empty"}
+          </div>
+          <div className="empty-sub">
+            {isFiltered 
+              ? "AI couldn't find your face in this album. Try showing all photos instead."
+              : "Upload photos to begin AI face matching. Guests can find themselves instantly via the shared link."}
+          </div>
+          {isFiltered && (
+            <button onClick={() => setIsFiltered(false)} className="btn-primary" style={{ marginTop: '1.8rem', fontSize: '0.82rem' }}>
+              Show All Photos
+            </button>
+          )}
         </div>
       ) : (
         <div className="insta-grid">
@@ -306,7 +327,7 @@ export default function GalleryView() {
                : photo.url;
                
             return (
-              <div key={photo.id} className="insta-item group">
+              <div key={photo.id} className="insta-item">
                 <img src={displayUrl} alt="Event" className="gallery-img" loading="lazy" />
                 <div className="insta-overlay">
                    <button onClick={() => saveAs(photo.url, 'photo.jpg')} title="Download High-Res" className="btn-download-premium">

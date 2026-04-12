@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { UploadCloud, CheckCircle, AlertCircle, Loader2, X, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { useAuth } from '../context/AuthContext';
 
@@ -150,9 +150,15 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
           onClick={() => fileInputRef.current?.click()}
           className="upload-box"
         >
-          <UploadCloud size={24} className="text-muted mb-md" />
-          <h4 className="text-sm mb-xs">Select assets for {gallery.name}</h4>
-          <p className="text-xs text-muted">AI processing starts after selection.</p>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ marginBottom: '1.5rem', opacity: 0.3 }}>
+            <circle cx="24" cy="24" r="20" stroke="#c9a96e" strokeWidth="1"/>
+            <path d="M24 32V20M18 26l6-6 6 6" stroke="#c9a96e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.5rem' }}>Select assets for {gallery.name}</h4>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 300 }}>
+            AI processing begins after selection<br/>
+            <span style={{ opacity: 0.5 }}>JPG, PNG, HEIC up to 50MB each</span>
+          </p>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -165,43 +171,47 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
       )}
 
       {uploading && (
-        <div className="py-xl">
-          <Loader2 className="animate-spin mb-md" size={32} color="var(--primary)" style={{ margin: '0 auto' }} />
-          <h4>Processing {progress.current} of {progress.total}</h4>
-          <div style={{ width: '100%', background: 'var(--bg-input)', height: '6px', borderRadius: '3px', marginTop: '10px' }}>
-            <div style={{ width: `${(progress.current / progress.total) * 100}%`, background: 'var(--primary)', height: '100%', borderRadius: '3px', transition: 'width 0.3s' }} />
+        <div style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+          <Loader2 className="animate-spin" size={28} style={{ color: 'var(--gold)', margin: '0 auto 16px' }} />
+          <h4 style={{ fontSize: '0.88rem', fontWeight: 500, color: 'var(--text)', marginBottom: '12px' }}>Processing {progress.current} of {progress.total}</h4>
+          <div style={{ width: '100%', background: 'rgba(255,255,255,0.05)', height: '2px', marginTop: '10px' }}>
+            <div style={{ width: `${(progress.current / progress.total) * 100}%`, background: 'var(--gold)', height: '100%', transition: 'width 0.3s' }} />
           </div>
         </div>
       )}
 
       {results.length > 0 && (
-        <div style={{ marginTop: 'var(--spacing-xl)', textAlign: 'left' }}>
-          <h5 className="mb-md">Upload Results</h5>
+        <div style={{ marginTop: '2rem', textAlign: 'left' }}>
+          <div className="panel-label">Upload Results</div>
           <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
             {results.map((res, idx) => (
-              <div key={idx} className="flex items-center justify-between mb-sm p-sm" style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)' }}>
-                <div className="flex items-center gap-sm">
-                   <ImageIcon size={16} className="text-muted" />
-                   <span style={{ fontSize: '0.875rem' }}>{res.name}</span>
-                </div>
+              <div key={idx} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: 'rgba(255,255,255,0.02)',
+                borderBottom: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{res.name}</span>
                 {res.status === 'success' ? (
-                  <CheckCircle size={18} color="#10b981" />
+                  <CheckCircle size={16} color="#22c55e" />
                 ) : (
-                  <div className="flex items-center gap-xs" style={{ color: res.status === 'error' ? '#ef4444' : '#f59e0b' }}>
-                    <AlertCircle size={16} />
-                    <span style={{ fontSize: '0.75rem' }}>{res.message}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: res.status === 'error' ? '#ef4444' : '#f59e0b' }}>
+                    <AlertCircle size={14} />
+                    <span style={{ fontSize: '0.72rem' }}>{res.message}</span>
                   </div>
                 )}
               </div>
             ))}
           </div>
-          <button className="btn-secondary mt-md" onClick={() => setResults([])}>Clear List</button>
+          <button className="btn-secondary" style={{ marginTop: '1rem', fontSize: '0.75rem', padding: '0.4rem 1rem' }} onClick={() => setResults([])}>Clear List</button>
         </div>
       )}
 
       {error && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: 'var(--radius-md)', marginTop: '15px' }}>
-          ⚠️ {error}
+        <div style={{ background: 'rgba(239, 68, 68, 0.06)', color: '#ef4444', padding: '12px 16px', borderLeft: '2px solid #ef4444', marginTop: '1rem', fontSize: '0.82rem' }}>
+          {error}
         </div>
       )}
     </div>

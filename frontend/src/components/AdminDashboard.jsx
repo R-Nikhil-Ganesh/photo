@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
-  Settings, UploadCloud, Check, X, Loader2,
+  UploadCloud, Check, X, Loader2,
   Users, ImageIcon, FolderOpen, IndianRupee, Trash2
 } from 'lucide-react';
 
@@ -11,25 +11,31 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 function StatCard({ icon, label, value, color }) {
   return (
     <div style={{
-      background: 'var(--bg-card)',
+      background: 'var(--bg)',
       border: '1px solid var(--border)',
-      borderRadius: 'var(--radius-lg)',
       padding: '20px 24px',
       display: 'flex',
       alignItems: 'center',
       gap: '16px',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
       <div style={{
-        width: 44, height: 44, borderRadius: 10,
-        background: color + '18',
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: '1px',
+        background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
+      }} />
+      <div style={{
+        width: 40, height: 40,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: color, flexShrink: 0,
+        color: color, flexShrink: 0, opacity: 0.7,
       }}>
         {icon}
       </div>
       <div>
-        <div style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1.1, color: 'var(--text)' }}>{value}</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 3 }}>{label}</div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.1, color: 'var(--text)', fontFamily: 'var(--font-serif)' }}>{value}</div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
       </div>
     </div>
   );
@@ -117,7 +123,7 @@ export default function AdminDashboard() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <Loader2 size={28} className="animate-spin" style={{ color: 'var(--primary)' }} />
+      <Loader2 size={28} className="animate-spin" style={{ color: 'var(--gold)' }} />
     </div>
   );
 
@@ -126,22 +132,22 @@ export default function AdminDashboard() {
   return (
     <div className="container animate-fade-in" style={{ paddingTop: 32, paddingBottom: 64 }}>
       {/* Header */}
-      <div className="flex justify-between items-center" style={{ marginBottom: 32 }}>
-        <div className="flex items-center gap-sm">
-          <Settings size={22} style={{ color: 'var(--primary)' }} />
-          <span style={{ fontWeight: 700, fontSize: '1.2rem' }}>Admin Console</span>
+      <div className="page-header" style={{ borderBottom: 'none', paddingBottom: '1rem' }}>
+        <div>
+          <div className="page-eyebrow">Administration</div>
+          <div className="page-title">Console</div>
         </div>
-        <button onClick={logout} className="btn-secondary">Logout</button>
+        <button onClick={logout} className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.4rem 1rem' }}>Logout</button>
       </div>
 
       {/* Stats Row */}
       {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 36 }}>
-          <StatCard icon={<Users size={20} />}      label="Total Members"   value={stats.total_members}  color="#6366f1" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: 36 }}>
+          <StatCard icon={<Users size={20} />}      label="Total Members"   value={stats.total_members}  color="#c9a96e" />
           <StatCard icon={<Users size={20} />}      label="Subscribed"      value={stats.subscribed}     color="#22c55e" />
-          <StatCard icon={<FolderOpen size={20} />} label="Total Folders"   value={stats.total_folders}  color="#f59e0b" />
-          <StatCard icon={<ImageIcon size={20} />}  label="Total Photos"    value={stats.total_photos}   color="#3b82f6" />
-          <StatCard icon={<IndianRupee size={20} />} label="Est. Revenue"   value={`₹${stats.total_revenue}`} color="#10b981" />
+          <StatCard icon={<FolderOpen size={20} />} label="Total Folders"   value={stats.total_folders}  color="#c9a96e" />
+          <StatCard icon={<ImageIcon size={20} />}  label="Total Photos"    value={stats.total_photos}   color="#c9a96e" />
+          <StatCard icon={<IndianRupee size={20} />} label="Est. Revenue"   value={`₹${stats.total_revenue}`} color="#22c55e" />
         </div>
       )}
 
@@ -151,7 +157,7 @@ export default function AdminDashboard() {
           <button key={t} className={`switcher-btn${activeTab === t ? ' active' : ''}`} onClick={() => setActiveTab(t)}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
             {t === 'subscriptions' && requests.length > 0 && (
-              <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: 99, padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+              <span style={{ background: 'var(--gold)', color: '#050508', borderRadius: 2, padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
                 {requests.length}
               </span>
             )}
@@ -161,39 +167,39 @@ export default function AdminDashboard() {
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
-        <div className="glass-panel">
-          <h3 className="text-sm uppercase text-muted tracking-widest mb-md">Payment QR Code</h3>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '2rem' }}>
+          <div className="panel-label">Payment QR Code</div>
           <input type="file" id="qr-upload" accept="image/*" onChange={handleQrUpload} style={{ display: 'none' }} />
           <label htmlFor="qr-upload" className="btn-primary cursor-pointer" style={{ display: 'inline-flex', gap: 8 }}>
             {uploadingQr ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
             Upload New QR
           </label>
-          <p className="text-xs text-dim mt-sm">Displayed to users when they request more folders.</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.8rem', fontWeight: 300 }}>Displayed to users when they request more folders.</p>
         </div>
       )}
 
       {/* Subscriptions Tab */}
       {activeTab === 'subscriptions' && (
-        <div className="glass-panel">
-          <h3 className="text-sm uppercase text-muted tracking-widest mb-md">Pending Requests</h3>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '2rem' }}>
+          <div className="panel-label">Pending Requests</div>
           {requests.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--bg-surface)', borderRadius: 'var(--radius)' }}>
+            <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
               No pending requests.
             </div>
           ) : (
-            <div className="flex flex-col gap-md">
+            <div className="flex flex-col" style={{ gap: '1px' }}>
               {requests.map(req => (
-                <div key={req.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                <div key={req.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <div>
-                    <p className="font-semibold">{req.user_email}</p>
-                    <p className="text-xs text-muted">Folders requested: {req.requested_folders}</p>
-                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" className="text-xs" style={{ color: 'var(--primary)' }}>View Screenshot ↗</a>
+                    <p style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text)' }}>{req.user_email}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Folders requested: {req.requested_folders}</p>
+                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', color: 'var(--gold)', letterSpacing: '0.04em' }}>View Screenshot ↗</a>
                   </div>
                   <div className="flex gap-sm">
-                    <button onClick={() => processRequest(req.id, 'approve')} style={{ background: '#22c55e', color: '#000', border: 'none', padding: '7px 14px', borderRadius: 'var(--radius)', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <button onClick={() => processRequest(req.id, 'approve')} style={{ background: '#22c55e', color: '#050508', border: 'none', padding: '7px 14px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       <Check size={14} /> Approve
                     </button>
-                    <button onClick={() => processRequest(req.id, 'reject')} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 'var(--radius)', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <button onClick={() => processRequest(req.id, 'reject')} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '7px 14px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       <X size={14} /> Reject
                     </button>
                   </div>
@@ -206,25 +212,25 @@ export default function AdminDashboard() {
 
       {/* Galleries Tab */}
       {activeTab === 'galleries' && (
-        <div className="glass-panel">
-          <h3 className="text-sm uppercase text-muted tracking-widest mb-md">All Galleries ({galleries.length})</h3>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '2rem' }}>
+          <div className="panel-label">All Galleries ({galleries.length})</div>
           {galleries.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--bg-surface)', borderRadius: 'var(--radius)' }}>
+            <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
               No galleries yet.
             </div>
           ) : (
-            <div className="flex flex-col gap-md">
+            <div className="flex flex-col" style={{ gap: '1px' }}>
               {galleries.map(g => (
-                <div key={g.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                <div key={g.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <div>
-                    <p className="font-semibold">{g.name}</p>
-                    <p className="text-xs text-muted">{g.owner_email} &middot; {g.photo_count} photos</p>
-                    <p className="text-xs text-dim">/{g.access_link}</p>
+                    <p style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text)' }}>{g.name}</p>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{g.owner_email} · {g.photo_count} photos</p>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', opacity: 0.6, fontFamily: 'monospace', letterSpacing: '0.05em' }}>/{g.access_link}</p>
                   </div>
                   <button
                     onClick={() => deleteGallery(g.id, g.name)}
                     disabled={deletingId === g.id}
-                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)', padding: '7px 14px', borderRadius: 'var(--radius)', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                    style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '7px 14px', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}
                   >
                     {deletingId === g.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     Delete
@@ -238,25 +244,26 @@ export default function AdminDashboard() {
 
       {/* History Tab */}
       {activeTab === 'history' && (
-        <div className="glass-panel">
-          <h3 className="text-sm uppercase text-muted tracking-widest mb-md">Request History</h3>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '2rem' }}>
+          <div className="panel-label">Request History</div>
           {historyRequests.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--bg-surface)', borderRadius: 'var(--radius)' }}>
+            <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
               No past requests.
             </div>
           ) : (
-            <div className="flex flex-col gap-md">
+            <div className="flex flex-col" style={{ gap: '1px' }}>
               {historyRequests.map(req => (
-                <div key={req.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                <div key={req.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <div>
-                    <p className="font-semibold text-muted">{req.user_email}</p>
-                    <p className="text-xs text-muted">Folders: {req.requested_folders}</p>
-                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" className="text-xs" style={{ color: 'var(--primary)', opacity: 0.8 }}>Screenshot ↗</a>
+                    <p style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text-muted)' }}>{req.user_email}</p>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Folders: {req.requested_folders}</p>
+                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', color: 'var(--gold)', opacity: 0.7, letterSpacing: '0.04em' }}>Screenshot ↗</a>
                   </div>
                   <span style={{
-                    padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700,
-                    background: req.status === 'approved' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+                    padding: '4px 10px', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                    background: req.status === 'approved' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
                     color: req.status === 'approved' ? '#22c55e' : '#ef4444',
+                    border: `1px solid ${req.status === 'approved' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
                   }}>
                     {req.status.toUpperCase()}
                   </span>

@@ -23,19 +23,19 @@ function Navigation() {
     <nav className="nav-container">
       <div className="nav-inner">
         <Link to="/" className="nav-logo">
-          Framy
+          Fr<span className="nav-logo-accent">a</span>my
         </Link>
         <div className="nav-actions">
           {token ? (
-            <div className="flex items-center gap-md">
-              <span className="text-xs text-muted">HELLO, {user?.name?.toUpperCase()}</span>
-              <button onClick={() => navigate('/signup?mode=update')} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
+            <>
+              <span className="nav-user">{user?.name}</span>
+              <button onClick={() => navigate('/signup?mode=update')} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.75rem' }}>
                  Update Face
               </button>
-              <button onClick={logout} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
+              <button onClick={logout} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.75rem' }}>
                  Logout
               </button>
-            </div>
+            </>
           ) : (
             <button onClick={() => navigate('/signup')} className="btn-primary">Sign In</button>
           )}
@@ -67,31 +67,37 @@ function Home() {
     <div className="animate-fade-in">
       {!token ? (
         <section className="hero-section">
-          <h1 className="hero-title text-gradient">Smart Sharing for Every Moment.</h1>
-          <p className="hero-subtitle text-muted">
-            A minimalist, AI-powered photo sharing engine designed for events, weddings, and high-end portfolios.
+          <div className="hero-tag">AI-Powered Photo Sharing</div>
+          <h1 className="hero-title">
+            Every moment,<br /><em>perfectly shared.</em>
+          </h1>
+          <p className="hero-subtitle">
+            A refined photo sharing engine built for events, weddings, and high-end portfolios. Face recognition included.
           </p>
           <div className="flex justify-center gap-md">
-            <button onClick={() => navigate('/signup')} className="btn-primary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
+            <button onClick={() => navigate('/signup')} className="btn-primary" style={{ padding: '0.85rem 2.2rem', fontSize: '0.88rem' }}>
               Get Started
             </button>
-            <button onClick={handleViewExample} className="btn-secondary" style={{ padding: '12px 24px', fontSize: '1rem' }}>
+            <button onClick={handleViewExample} className="btn-ghost" style={{ padding: '0.85rem 2.2rem', fontSize: '0.88rem' }}>
               View Example
             </button>
           </div>
           
           <div className="hero-features">
             <div className="feature-item">
-              <h4 className="mb-xs">Face Recognition</h4>
-              <p className="text-sm text-dim">Secure client-side AI mapping for instant retrieval. Never scroll through 1000s of photos again.</p>
+              <div className="feat-num">01</div>
+              <h4>Face Recognition</h4>
+              <p>Secure client-side AI mapping for instant retrieval. Never scroll through thousands of photos again.</p>
             </div>
             <div className="feature-item">
-              <h4 className="mb-xs">Private Galleries</h4>
-              <p className="text-sm text-dim">Encrypted event folders with controlled public access. Fast, simple guest links.</p>
+              <div className="feat-num">02</div>
+              <h4>Private Galleries</h4>
+              <p>Encrypted event folders with controlled public access. Fast, simple guest links.</p>
             </div>
             <div className="feature-item">
-              <h4 className="mb-xs">Bulk Archiving</h4>
-              <p className="text-sm text-dim">High-speed processing and one-click ZIP generation for photographers to deliver clients their matches instantly.</p>
+              <div className="feat-num">03</div>
+              <h4>Bulk Archiving</h4>
+              <p>High-speed processing and one-click ZIP generation. Deliver client matches instantly.</p>
             </div>
           </div>
         </section>

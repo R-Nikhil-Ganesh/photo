@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Folder, Copy, Check, UploadCloud, Eye, ChevronLeft, UserCircle2, X } from 'lucide-react';
+import { Copy, Check, ChevronLeft, UserCircle2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import GalleryUploader from './LiveBooth';
@@ -76,24 +76,24 @@ export default function GalleryDashboard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 'var(--spacing-md)',
+          gap: '16px',
           flexWrap: 'wrap',
-          background: 'rgba(245, 158, 11, 0.1)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 'var(--radius-md)',
-          padding: 'var(--spacing-sm) var(--spacing-md)',
-          marginBottom: 'var(--spacing-lg)'
+          background: 'rgba(201,169,110,0.06)',
+          border: '1px solid rgba(201,169,110,0.25)',
+          padding: '14px 20px',
+          marginBottom: '2.5rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f59e0b' }}>
-            <UserCircle2 size={20} />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--gold)' }}>
+            <UserCircle2 size={18} />
+            <span style={{ fontSize: '0.85rem', fontWeight: 400, letterSpacing: '0.02em' }}>
               Your account has no face photo yet — AI sorting won't work until you add one.
             </span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
               onClick={() => navigate('/signup')}
-              style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 'var(--radius-sm)', padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+              className="btn-primary"
+              style={{ fontSize: '0.75rem', padding: '0.4rem 1rem' }}
             >
               Add Face Photo
             </button>
@@ -112,36 +112,43 @@ export default function GalleryDashboard() {
         <>
           <header className="page-header">
             <div>
-              <h1 className="mb-xs">Collections</h1>
-              <p className="text-muted text-sm">Organize and distribute your event photography.</p>
+              <div className="page-eyebrow">Your workspace</div>
+              <div className="page-title">Collections</div>
+              <div className="page-sub">Organize and distribute your event photography</div>
               {subStatus && (
-                <p style={{ fontSize: '0.75rem', color: '#555', marginTop: '4px' }}>
-                  Folders used: {subStatus.owned_galleries} / {subStatus.allowed_galleries}
-                </p>
+                <div className="usage-bar" style={{ marginTop: '1rem', marginBottom: 0 }}>
+                  <div className="bar-label">{subStatus.owned_galleries} / {subStatus.allowed_galleries} folders used</div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{ width: `${Math.min(100, (subStatus.owned_galleries / subStatus.allowed_galleries) * 100)}%` }}></div>
+                  </div>
+                  {subStatus.owned_galleries >= subStatus.allowed_galleries && (
+                    <div className="bar-label" style={{ color: 'rgba(201,169,110,0.6)' }}>Limit reached</div>
+                  )}
+                </div>
               )}
             </div>
             
-            <div className="header-actions">
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               {subStatus?.can_create_gallery && (
-                <input 
-                  type="text" 
-                  placeholder="Folder Name..." 
-                  className="input-field" 
-                  style={{ marginBottom: 0 }}
-                  value={newGalleryName}
-                  onChange={(e) => setNewGalleryName(e.target.value)}
-                />
-              )}
-              {subStatus?.can_create_gallery && (
-                <button onClick={createGallery} className="btn-primary" style={{ flex: '1 0 auto' }}>
-                  New Collection
-                </button>
+                <>
+                  <input 
+                    type="text" 
+                    placeholder="Folder Name..." 
+                    className="input-field" 
+                    style={{ marginBottom: 0, maxWidth: '200px' }}
+                    value={newGalleryName}
+                    onChange={(e) => setNewGalleryName(e.target.value)}
+                  />
+                  <button onClick={createGallery} className="btn-primary">
+                    New Collection
+                  </button>
+                </>
               )}
               <button 
                 onClick={() => navigate('/subscribe')} 
-                style={{ flex: '1 0 auto', background: '#f59e0b', color: '#000', border: 'none', padding: '10px 18px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+                className="btn-upgrade"
               >
-                {subStatus?.can_create_gallery ? 'Upgrade Plan' : 'Upgrade Plan to Create More'}
+                ↑ {subStatus?.can_create_gallery ? 'Upgrade Plan' : 'Upgrade to Create More'}
               </button>
             </div>
           </header>
@@ -149,55 +156,90 @@ export default function GalleryDashboard() {
           <div className="folder-grid">
             {galleries.map(g => (
               <div key={g.id} className="folder-card" onClick={() => setActiveGallery(g)}>
-                <Folder className="text-muted mb-md" size={20} />
-                <h3 className="text-sm">{g.name}</h3>
-                <p className="text-xs text-muted" style={{ marginTop: '4px' }}>View & Upload</p>
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ marginBottom: '1.5rem', opacity: 0.4 }}>
+                  <path d="M6 12a2 2 0 012-2h8l3 4h13a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V12z" stroke="#c9a96e" strokeWidth="1.2"/>
+                </svg>
+                <div style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.4rem' }}>{g.name}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>View & Upload</div>
+                <div style={{ position: 'absolute', top: '2rem', right: '2rem', fontSize: '1rem', color: 'rgba(201,169,110,0.3)', transition: 'all 0.2s' }}>↗</div>
               </div>
             ))}
+            {subStatus?.can_create_gallery && (
+              <div 
+                style={{
+                  background: 'transparent',
+                  border: '1px dashed rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-dim)',
+                  padding: '2rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onClick={() => document.querySelector('.input-field')?.focus()}
+              >
+                <span style={{ fontSize: '1.2rem', opacity: 0.4 }}>+</span> New Collection
+              </div>
+            )}
           </div>
         </>
       ) : (
         <div className="fade">
-          <div className="flex items-center justify-between mb-lg">
-             <button onClick={() => setActiveGallery(null)} className="btn-secondary flex items-center gap-sm">
-               <ChevronLeft size={14} /> Back
-             </button>
-             <h2 className="text-sm font-semibold">{activeGallery.name.toUpperCase()}</h2>
-          </div>
-          
-          <div className="switcher-group">
-            <button className="switcher-btn active">
-              <UploadCloud size={14} /> Upload
-            </button>
-            <button 
-              className="switcher-btn"
-              onClick={() => navigate(`/gallery/${activeGallery.access_link}`)}
-            >
-              <Eye size={14} /> View Gallery
-            </button>
+          <div className="page-breadcrumb">
+            <span className="bc-link" onClick={() => setActiveGallery(null)}>Collections</span>
+            <span className="breadcrumb-sep">/</span>
+            <span style={{ color: 'rgba(232,228,220,0.6)' }}>{activeGallery.name}</span>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-md" style={{ alignItems: 'start' }}>
-            <div className="md:col-span-2">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '2rem' }}>
+            <div className="page-title" style={{ fontSize: '2rem' }}>{activeGallery.name}</div>
+          </div>
+          
+          <div className="upload-layout">
+            <div className="upload-main">
+              <div className="switcher-group">
+                <button className="switcher-btn active">
+                  Upload
+                </button>
+                <button 
+                  className="switcher-btn"
+                  onClick={() => navigate(`/gallery/${activeGallery.access_link}`)}
+                >
+                  View Gallery
+                </button>
+              </div>
+
               <GalleryUploader gallery={activeGallery} />
             </div>
             
-            <aside>
-              <div className="folder-card" style={{ padding: '24px' }}>
-                <h4 className="text-xs uppercase tracking-widest text-muted mb-md">Shared Access</h4>
-                <div className="flex gap-sm items-center bg-black p-sm rounded-sm border border-border mb-md">
-                  <code className="flex-1 truncate text-xs text-muted">
-                    {activeGallery.access_link}
-                  </code>
-                  <button onClick={() => copyLink(activeGallery.access_link)} className="btn-icon">
-                    {copied ? <Check size={14} color="#fff" /> : <Copy size={14} />}
-                  </button>
-                </div>
-                <p className="text-xs text-muted" style={{ lineHeight: '1.6' }}>
-                  Anyone with this link can access the public gallery and find their faces via AI.
-                </p>
+            <div className="sidebar-panel">
+              <div className="panel-label">Shared Access</div>
+              <div className="access-code">
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeGallery.access_link}</span>
+                <button onClick={() => copyLink(activeGallery.access_link)} className="copy-btn">
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
               </div>
-            </aside>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: 1.7, fontWeight: 300 }}>
+                Anyone with this link can access the public gallery and find their faces via AI face matching.
+              </div>
+              <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                <div className="panel-label">Quick Link</div>
+                <button 
+                  className="btn-ghost" 
+                  style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem' }}
+                  onClick={() => {
+                    const fullLink = `${window.location.origin}/gallery/${activeGallery.access_link}`;
+                    navigator.clipboard.writeText(fullLink);
+                  }}
+                >
+                  Share Gallery Link →
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

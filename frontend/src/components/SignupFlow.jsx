@@ -189,20 +189,20 @@ export default function SignupFlow() {
   const renderFaceCapture = () => (
     <div className="animate-fade-in">
       {/* Header varies depending on whether it's new signup or profile update */}
-      <div style={{ marginBottom: 'var(--spacing-lg)', textAlign: 'center' }}>
+      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
         {token && !googleToken ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#f59e0b', marginBottom: '8px' }}>
-              <UserCircle2 size={20} />
-              <span style={{ fontWeight: 600 }}>No Face Profile Found</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--gold)', marginBottom: '8px' }}>
+              <UserCircle2 size={18} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>No Face Profile Found</span>
             </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, fontWeight: 300 }}>
               Take a quick selfie so the AI can recognise you across event galleries.
             </p>
           </>
         ) : (
-          <div className="flex items-center justify-center gap-sm mb-sm" style={{ color: '#10b981' }}>
-            <Check size={20} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#22c55e', fontSize: '0.85rem' }}>
+            <Check size={18} />
             <span>Identity Verified — now take a selfie</span>
           </div>
         )}
@@ -211,15 +211,14 @@ export default function SignupFlow() {
       {/* Camera box */}
       <div style={{
         position: 'relative',
-        margin: 'var(--spacing-xl) 0',
+        margin: '2rem 0',
         minHeight: '300px',
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
+        background: 'rgba(255,255,255,0.02)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        border: '1px solid var(--glass-border)'
+        border: '1px solid rgba(255,255,255,0.08)'
       }}>
         {/* Live camera feed */}
         {isCameraActive && (
@@ -227,11 +226,11 @@ export default function SignupFlow() {
             <video ref={videoRef} autoPlay playsInline muted
               style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px' }}>
-              <button onClick={capturePhoto} className="btn-primary" style={{ borderRadius: '50px' }}>
-                <Camera size={20} /> Capture Selfie
+              <button onClick={capturePhoto} className="btn-primary" style={{ padding: '0.6rem 1.6rem' }}>
+                <Camera size={18} /> Capture
               </button>
-              <button onClick={stopCamera} className="btn-secondary" style={{ borderRadius: '50px' }}>
-                <X size={20} />
+              <button onClick={stopCamera} className="btn-secondary" style={{ padding: '0.6rem 0.8rem' }}>
+                <X size={18} />
               </button>
             </div>
           </div>
@@ -245,50 +244,51 @@ export default function SignupFlow() {
               src={capturedImage}
               alt="Selfie preview"
               crossOrigin="anonymous"
-              style={{ width: '250px', height: '250px', objectFit: 'cover', borderRadius: 'var(--radius-full)', border: '4px solid var(--primary)', margin: '0 auto' }}
+              style={{ width: '220px', height: '220px', objectFit: 'cover', borderRadius: '50%', border: '2px solid var(--gold)', margin: '0 auto' }}
             />
             <button
               onClick={() => { setCapturedImage(null); startCamera(); }}
-              style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--bg-dark)', color: 'white', borderRadius: '50%', padding: '8px', cursor: 'pointer', border: 'none' }}
+              style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', borderRadius: '50%', padding: '8px', cursor: 'pointer', border: '1px solid var(--border-strong)' }}
             >
-              <RefreshCw size={20} />
+              <RefreshCw size={18} />
             </button>
           </div>
         )}
 
         {/* Idle — no camera, no image yet */}
         {!isCameraActive && !capturedImage && (
-          <div className="flex flex-col items-center gap-md" style={{ cursor: 'pointer' }} onClick={startCamera}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto var(--spacing-sm)' }}>
-              <Camera size={32} color="var(--primary)" />
-            </div>
-            <h4>Enable Camera</h4>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Take a clear front-facing selfie</p>
+          <div className="flex flex-col items-center gap-md" style={{ cursor: 'pointer', padding: '2rem' }} onClick={startCamera}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" stroke="#c9a96e" strokeWidth="1"/>
+              <path d="M24 32V20M18 26l6-6 6 6" stroke="#c9a96e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)' }}>Enable Camera</h4>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 300 }}>Take a clear front-facing selfie</p>
           </div>
         )}
 
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
 
-      {error && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: 'var(--spacing-md)' }}>{error}</p>}
+      {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: '1rem' }}>{error}</p>}
 
       {success && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#10b981', marginBottom: 'var(--spacing-md)', fontWeight: 600 }}>
-          <Check size={20} /> Face profile saved! Redirecting…
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#22c55e', marginBottom: '1rem', fontWeight: 500, fontSize: '0.85rem' }}>
+          <Check size={18} /> Face profile saved! Redirecting…
         </div>
       )}
 
       {capturedImage && modelsLoaded && !success && (
         <button
-          className="btn-primary flex items-center justify-center"
-          style={{ width: '100%', padding: '1rem' }}
+          className="btn-primary"
+          style={{ width: '100%', padding: '0.85rem', justifyContent: 'center' }}
           onClick={saveFaceProfile}
           disabled={loading}
         >
           {loading
-            ? <><Loader2 className="animate-spin" size={20} style={{ marginRight: '8px' }} /> Computing…</>
+            ? <><Loader2 className="animate-spin" size={18} style={{ marginRight: '8px' }} /> Computing…</>
             : token && !googleToken
-              ? '💾  Save Face Profile'
+              ? 'Save Face Profile'
               : 'Save Profile & Start Matching'
           }
         </button>
@@ -298,7 +298,7 @@ export default function SignupFlow() {
       {!success && (
         <button
           className="btn-secondary"
-          style={{ width: '100%', padding: '0.8rem', marginTop: 'var(--spacing-sm)' }}
+          style={{ width: '100%', padding: '0.7rem', marginTop: '8px', justifyContent: 'center' }}
           onClick={() => {
              stopCamera();
              const returnTo = new URLSearchParams(window.location.search).get('returnTo');
@@ -314,32 +314,39 @@ export default function SignupFlow() {
   // ── Main render ───────────────────────────────────────────────────────────
   return (
     <div className="container animate-fade-in flex flex-col items-center justify-center" style={{ minHeight: '80vh' }}>
-      <div className="glass-panel" style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-        <h2 className="text-gradient">
-          {stage === 'face-capture' && token && !googleToken ? 'Add Your Face Photo' : 'AI Account Setup'}
+      <div className="glass-panel" style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+        <div className="auth-eyebrow">
+          {stage === 'face-capture' && token && !googleToken ? 'Profile Update' : 'Account Setup'}
+        </div>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.9rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.6rem', lineHeight: 1.2 }}>
+          {stage === 'face-capture' && token && !googleToken ? <>Add Your<br/>Face Photo</> : <>Welcome to<br/>Framy</>}
         </h2>
-        <p className="mb-xl">
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '2.5rem', fontWeight: 300 }}>
           {stage === 'face-capture' && token && !googleToken
             ? 'Your account is missing a face profile. Add one to unlock AI photo sorting.'
-            : 'Take a quick selfie to enable automatic AI matching across all event galleries.'}
+            : 'Sign in to enable AI face matching across all your event galleries. Your selfie is processed client-side — never stored on our servers.'}
         </p>
 
         {loading && stage === 'idle' ? (
-          <div style={{ padding: 'var(--spacing-xl)', color: 'var(--text-muted)' }}>
-            <Loader2 className="animate-spin" size={32} style={{ margin: '0 auto var(--spacing-sm)' }} />
+          <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>
+            <Loader2 className="animate-spin" size={28} style={{ margin: '0 auto 8px' }} />
           </div>
         ) : stage === 'face-capture' ? (
           renderFaceCapture()
         ) : (
           <>
-            <div className="flex justify-center mb-xl">
+            <div className="flex justify-center mb-lg">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => setError('Google Authentication Failed')}
                 useOneTap
               />
             </div>
-            {error && <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>{error}</p>}
+            <div className="divider"><span>or</span></div>
+            {error && <p style={{ color: '#ef4444', fontSize: '0.82rem', marginBottom: '1rem' }}>{error}</p>}
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textAlign: 'center', marginTop: '1rem', lineHeight: 1.6 }}>
+              By continuing, you agree to Framy's Terms of Service and Privacy Policy. Face data is never transmitted to our servers.
+            </div>
           </>
         )}
       </div>
