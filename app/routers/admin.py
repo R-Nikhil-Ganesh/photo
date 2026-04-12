@@ -123,7 +123,7 @@ def get_stats(
     total_photos = db.query(Photo).count()
     total_folders = db.query(Gallery).count()
     approved_requests = db.query(SubscriptionRequest).filter(SubscriptionRequest.status == "approved").all()
-    total_revenue = sum(r.requested_folders * 99 for r in approved_requests)  # ₹99 per folder slot
+    total_revenue = sum(r.requested_folders * 120 for r in approved_requests)  # ₹120 per folder slot
 
     return {
         "total_members": total_members,
