@@ -49,16 +49,23 @@ export default function FindMeCapture({ accessLink }) {
   const extractFaceVector = async () => {
     if (!imageRef.current) return null;
 
-    // Extract face descriptor using client-side WebGL
-    const detection = await faceapi.detectSingleFace(imageRef.current)
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    // Try progressively lower confidence to handle varied selfie quality
+    const confidenceLevels = [0.7, 0.5, 0.3];
+    let detection = null;
+
+    for (const conf of confidenceLevels) {
+      const opts = new faceapi.SsdMobilenetv1Options({ minConfidence: conf });
+      detection = await faceapi
+        .detectSingleFace(imageRef.current, opts)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+      if (detection) break;
+    }
 
     if (!detection) {
       throw new Error("No face detected in the image. Please try another selfie.");
     }
 
-    // Convert Float32Array to standard JS Array
     return Array.from(detection.descriptor);
   };
 

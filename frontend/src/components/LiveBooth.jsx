@@ -56,81 +56,63 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
       setProgress(prev => ({ ...prev, current: i + 1 }));
 
       try {
-        // 1. Process image for face detection
+        // 1. Resize large images before detection — improves speed and recall
         const image = await faceapi.bufferToImage(file);
-        // Detect faces with a balanced confidence to filter out background objects while keeping real people
-        const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.45, maxResults: 500 });
-        const detections = await faceapi.detectAllFaces(image, options).withFaceLandmarks().withFaceDescriptors();
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 1280;
+        const scale = Math.min(1, MAX_DIM / Math.max(image.width, image.height));
+        canvas.width = Math.round(image.width * scale);
+        canvas.height = Math.round(image.height * scale);
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
 
-        if (detections.length === 0) {
-          setResults(prev => [...prev, { name: file.name, status: 'warning', message: 'No faces found' }]);
-          continue;
+        // 2. Multi-pass detection: try progressively lower confidence to catch more faces
+        let detections = [];
+        const confidenceLevels = [0.5, 0.35, 0.2];
+        for (const conf of confidenceLevels) {
+          const opts = new faceapi.SsdMobilenetv1Options({ minConfidence: conf, maxResults: 500 });
+          detections = await faceapi.detectAllFaces(canvas, opts).withFaceLandmarks().withFaceDescriptors();
+          if (detections.length > 0) break;
         }
 
-        // 2. Upload to Cloudinary (Using FETCH to avoid axios header conflicts)
-        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-        
+        // 3. Upload to Cloudinary regardless of face count — photos without faces still belong in the gallery
         if (!cloudName) {
-            throw new Error("Cloudinary configuration (VITE_CLOUDINARY_CLOUD_NAME) is missing in environment!");
+          throw new Error("Cloudinary configuration (VITE_CLOUDINARY_CLOUD_NAME) is missing in environment!");
         }
-        
+
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', 'ml_default'); 
+        formData.append('upload_preset', 'ml_default');
 
-        let cloudinaryRes;
-        try {
-            const cResponse = await fetch(
-                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-                {
-                    method: 'POST',
-                    body: formData,
-                }
-            );
-            
-            const cData = await cResponse.json();
-            
-            if (!cResponse.ok) {
-                console.error("CLOUDINARY RAW ERROR:", cData);
-                throw new Error(cData.error?.message || "Cloudinary Upload Failed");
-            }
-            
-            cloudinaryRes = { data: cData };
-        } catch (cErr) {
-            console.error("CLOUDINARY FETCH FAIL:", cErr);
-            throw cErr;
-        }
+        const cResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          { method: 'POST', body: formData }
+        );
+        const cData = await cResponse.json();
+        if (!cResponse.ok) throw new Error(cData.error?.message || "Cloudinary Upload Failed");
 
-        // 3. Format face vectors for backend
+        // 4. Scale bounding boxes back to original image dimensions
+        const scaleBack = 1 / scale;
         const faces = detections.map(det => ({
-            encoding: Array.from(det.descriptor),
-            box: [
-                Math.round(det.detection.box.top),
-                Math.round(det.detection.box.right),
-                Math.round(det.detection.box.bottom),
-                Math.round(det.detection.box.left)
-            ]
+          encoding: Array.from(det.descriptor),
+          box: [
+            Math.round(det.detection.box.top * scaleBack),
+            Math.round(det.detection.box.right * scaleBack),
+            Math.round(det.detection.box.bottom * scaleBack),
+            Math.round(det.detection.box.left * scaleBack),
+          ]
         }));
 
-        // 4. Send to Backend
-        console.log("Sending to Backend Webhook with Token:", token?.substring(0, 10) + "...");
-        
-        try {
-            await axios.post(`${API_BASE_URL}/webhook/cloudinary/${gallery.id}`, {
-                public_id: cloudinaryRes.data.public_id,
-                secure_url: cloudinaryRes.data.secure_url,
-                width: cloudinaryRes.data.width,
-                height: cloudinaryRes.data.height,
-                faces: faces
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-        } catch (bErr) {
-            console.error("BACKEND 401/ERROR:", bErr.response?.data || bErr);
-            throw bErr;
-        }
+        // 5. Send to backend
+        await axios.post(`${API_BASE_URL}/webhook/cloudinary/${gallery.id}`, {
+          public_id: cData.public_id,
+          secure_url: cData.secure_url,
+          width: cData.width,
+          height: cData.height,
+          faces,
+        }, { headers: { Authorization: `Bearer ${token}` } });
 
-        setResults(prev => [...prev, { name: file.name, status: 'success' }]);
+        const faceNote = detections.length === 0 ? ' (no faces detected)' : ` · ${detections.length} face${detections.length > 1 ? 's' : ''}`;
+        setResults(prev => [...prev, { name: file.name, status: detections.length === 0 ? 'warning' : 'success', message: detections.length === 0 ? 'Uploaded — no faces found' : undefined, faceNote }]);
 
       } catch (err) {
         console.error(err);
@@ -195,7 +177,10 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
               }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{res.name}</span>
                 {res.status === 'success' ? (
-                  <CheckCircle size={16} color="#22c55e" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
+                    <CheckCircle size={16} />
+                    {res.faceNote && <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{res.faceNote}</span>}
+                  </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: res.status === 'error' ? '#ef4444' : '#f59e0b' }}>
                     <AlertCircle size={14} />
