@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import Optional
 from app.database import get_db
 from app.models import Gallery, User
 from app.routers.auth import get_current_user
@@ -9,30 +8,44 @@ from app.schemas import SearchResponse, SearchRequest
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
-DISTANCE_THRESHOLD = 0.65  # Looser threshold for more matches
+# Primary threshold — photos where ANY face is within this distance are included
+PRIMARY_THRESHOLD = 0.55
+# Fallback threshold — used if primary returns zero results (looser net)
+FALLBACK_THRESHOLD = 0.68
 
 def _run_vector_search(db: Session, gallery_id, encoding: list) -> list:
     """
-    Common helper that executes the pgvector nearest-neighbour query.
-    Returns a list of matching photo URLs.
+    Two-pass ranked search:
+    1. Tight pass — high-confidence matches
+    2. Fallback pass — catches the same person in difficult lighting/angles
+    Returns deduplicated photo URLs ordered by best match distance.
     """
     encoding_str = f"[{','.join(map(str, encoding))}]"
 
+    # Ranked query — returns (url, best_distance) per photo
     query = text("""
-        SELECT DISTINCT p.url
+        SELECT p.url, MIN(f.encoding <-> cast(:encoding as vector)) AS best_dist
         FROM photos p
         JOIN indexed_faces f ON p.id = f.photo_id
         WHERE p.gallery_id = :gallery_id
-        AND f.encoding <-> cast(:encoding as vector) < :threshold
+        GROUP BY p.url
+        HAVING MIN(f.encoding <-> cast(:encoding as vector)) < :threshold
+        ORDER BY best_dist ASC
     """)
 
-    result = db.execute(query, {
-        "gallery_id": gallery_id,
-        "encoding": encoding_str,
-        "threshold": DISTANCE_THRESHOLD
-    })
+    def run(threshold):
+        rows = db.execute(query, {
+            "gallery_id": gallery_id,
+            "encoding": encoding_str,
+            "threshold": threshold,
+        }).fetchall()
+        return [row[0] for row in rows]
 
-    return [row[0] for row in result]
+    results = run(PRIMARY_THRESHOLD)
+    if not results:
+        results = run(FALLBACK_THRESHOLD)
+
+    return results
 
 
 @router.get("/{access_link}", response_model=SearchResponse)
@@ -41,11 +54,6 @@ def search_faces_authenticated(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Authenticated users hit this endpoint with a valid JWT.
-    Their 128D encoding is pulled directly from the DB — no upload needed.
-    Used by GalleryView when a logged-in user wants to filter by their face.
-    """
     if current_user.face_encoding is None or len(current_user.face_encoding) != 128:
         raise HTTPException(
             status_code=400,
@@ -66,11 +74,6 @@ def search_faces_guest(
     body: SearchRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Guest / unauthenticated flow used by FindMeCapture.
-    The frontend runs face-api.js locally and POSTs the 128D encoding here.
-    No login required — anyone with the invite link can find their photos.
-    """
     if not body.encoding or len(body.encoding) != 128:
         raise HTTPException(
             status_code=400,

@@ -137,10 +137,18 @@ export default function SignupFlow() {
 
   // ── Extract face vector from the captured image ───────────────────────────
   const extractFaceVector = async () => {
-    const detection = await faceapi
-      .detectSingleFace(imageRef.current)
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    // Try progressively lower confidence to handle varied lighting/angles
+    const confidenceLevels = [0.7, 0.5, 0.3];
+    let detection = null;
+
+    for (const conf of confidenceLevels) {
+      const opts = new faceapi.SsdMobilenetv1Options({ minConfidence: conf });
+      detection = await faceapi
+        .detectSingleFace(imageRef.current, opts)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+      if (detection) break;
+    }
 
     if (!detection) throw new Error('No face detected. Make sure your face is clear and well-lit.');
     return Array.from(detection.descriptor);

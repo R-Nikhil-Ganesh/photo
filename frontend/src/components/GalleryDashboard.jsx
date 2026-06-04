@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Copy, Check, ChevronLeft, UserCircle2, X, Trash2 } from 'lucide-react';
+import { Copy, Check, ChevronLeft, UserCircle2, X, Trash2, QrCode, Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import GalleryUploader from './LiveBooth';
+import QRModal from './QRModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -17,6 +18,12 @@ export default function GalleryDashboard() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [subStatus, setSubStatus] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // gallery object to confirm delete
+  const [qrGallery, setQrGallery] = useState(null); // gallery to show QR for
+  const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'photos'
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [favoritingId, setFavoritingId] = useState(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -80,6 +87,45 @@ export default function GalleryDashboard() {
     navigator.clipboard.writeText(fullLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const fetchGalleryPhotos = async (gallery) => {
+    setLoadingPhotos(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/gallery/${gallery.id}/photos`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGalleryPhotos(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPhotos(false);
+    }
+  };
+
+  const toggleFavorite = async (photo) => {
+    setFavoritingId(photo.id);
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/gallery/${activeGallery.id}/photos/${photo.id}/favorite`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setGalleryPhotos(prev =>
+        prev.map(p => p.id === photo.id ? { ...p, is_favorite: res.data.is_favorite } : p)
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFavoritingId(null);
+    }
+  };
+
+  const openGallery = (g) => {
+    setActiveGallery(g);
+    setActiveTab('upload');
+    setGalleryPhotos([]);
+    setShowFavoritesOnly(false);
   };
 
   return (
@@ -171,13 +217,29 @@ export default function GalleryDashboard() {
 
           <div className="folder-grid">
             {galleries.map(g => (
-              <div key={g.id} className="folder-card" onClick={() => setActiveGallery(g)} style={{ position: 'relative' }}>
+            <div key={g.id} className="folder-card" onClick={() => openGallery(g)} style={{ position: 'relative' }}>
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ marginBottom: '1.5rem', opacity: 0.4 }}>
                   <path d="M6 12a2 2 0 012-2h8l3 4h13a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V12z" stroke="#c9a96e" strokeWidth="1.2"/>
                 </svg>
                 <div style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.4rem' }}>{g.name}</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>View & Upload</div>
                 <div style={{ position: 'absolute', top: '2rem', right: '2rem', fontSize: '1rem', color: 'rgba(201,169,110,0.3)', transition: 'all 0.2s' }}>↗</div>
+                {/* QR button */}
+                <button
+                  title="Share QR Code"
+                  onClick={(e) => { e.stopPropagation(); setQrGallery(g); }}
+                  style={{
+                    position: 'absolute', bottom: '1.2rem', right: '3.2rem',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: 'rgba(201,169,110,0.5)', padding: '4px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'color 0.2s', borderRadius: '4px',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(201,169,110,0.9)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(201,169,110,0.5)'}
+                >
+                  <QrCode size={15} />
+                </button>
                 {/* Delete button — stops propagation so the card click doesn't fire */}
                 <button
                   title="Delete collection"
@@ -234,10 +296,22 @@ export default function GalleryDashboard() {
           <div className="upload-layout">
             <div className="upload-main">
               <div className="switcher-group">
-                <button className="switcher-btn active">
+                <button
+                  className={`switcher-btn${activeTab === 'upload' ? ' active' : ''}`}
+                  onClick={() => setActiveTab('upload')}
+                >
                   Upload
                 </button>
-                <button 
+                <button
+                  className={`switcher-btn${activeTab === 'photos' ? ' active' : ''}`}
+                  onClick={() => {
+                    setActiveTab('photos');
+                    fetchGalleryPhotos(activeGallery);
+                  }}
+                >
+                  Photos & Favorites
+                </button>
+                <button
                   className="switcher-btn"
                   onClick={() => navigate(`/gallery/${activeGallery.access_link}`)}
                 >
@@ -245,7 +319,71 @@ export default function GalleryDashboard() {
                 </button>
               </div>
 
-              <GalleryUploader gallery={activeGallery} />
+              {activeTab === 'upload' && <GalleryUploader gallery={activeGallery} />}
+
+              {activeTab === 'photos' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                      {showFavoritesOnly
+                        ? `${galleryPhotos.filter(p => p.is_favorite).length} favorites selected for album`
+                        : `${galleryPhotos.length} photos · click ♥ to mark for album printing`}
+                    </div>
+                    <button
+                      onClick={() => setShowFavoritesOnly(f => !f)}
+                      style={{
+                        background: showFavoritesOnly ? 'rgba(201,169,110,0.15)' : 'transparent',
+                        border: `1px solid ${showFavoritesOnly ? 'rgba(201,169,110,0.4)' : 'var(--border)'}`,
+                        color: showFavoritesOnly ? 'var(--gold)' : 'var(--text-dim)',
+                        borderRadius: '6px', padding: '5px 12px', fontSize: '0.72rem',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <Heart size={13} fill={showFavoritesOnly ? 'currentColor' : 'none'} />
+                      {showFavoritesOnly ? 'Show All' : 'Favorites Only'}
+                    </button>
+                  </div>
+
+                  {loadingPhotos ? (
+                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>Loading photos…</div>
+                  ) : galleryPhotos.length === 0 ? (
+                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>No photos yet. Upload some first.</div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
+                      {galleryPhotos
+                        .filter(p => !showFavoritesOnly || p.is_favorite)
+                        .map(photo => {
+                          const thumb = photo.url.includes('/upload/')
+                            ? photo.url.replace('/upload/', '/upload/c_fill,w_280,h_280,q_auto/')
+                            : photo.url;
+                          return (
+                            <div key={photo.id} style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', borderRadius: '4px' }}>
+                              <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
+                              <button
+                                onClick={() => toggleFavorite(photo)}
+                                disabled={favoritingId === photo.id}
+                                title={photo.is_favorite ? 'Remove from favorites' : 'Mark as favorite'}
+                                style={{
+                                  position: 'absolute', top: '6px', right: '6px',
+                                  background: 'rgba(0,0,0,0.55)', border: 'none',
+                                  borderRadius: '50%', width: '30px', height: '30px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  cursor: 'pointer', transition: 'all 0.15s',
+                                  color: photo.is_favorite ? '#ef4444' : 'rgba(255,255,255,0.7)',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.55)'}
+                              >
+                                <Heart size={14} fill={photo.is_favorite ? 'currentColor' : 'none'} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="sidebar-panel">
@@ -263,7 +401,7 @@ export default function GalleryDashboard() {
                 <div className="panel-label">Quick Link</div>
                 <button 
                   className="btn-ghost" 
-                  style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem' }}
+                  style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem', marginBottom: '8px' }}
                   onClick={() => {
                     const fullLink = `${window.location.origin}/gallery/${activeGallery.access_link}`;
                     navigator.clipboard.writeText(fullLink);
@@ -271,12 +409,28 @@ export default function GalleryDashboard() {
                 >
                   Share Gallery Link →
                 </button>
+                <button
+                  className="btn-ghost"
+                  style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  onClick={() => setQrGallery(activeGallery)}
+                >
+                  <QrCode size={14} /> Show Event QR Code
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
     </div>
+
+    {/* ── QR Code Modal ── */}
+    {qrGallery && (
+      <QRModal
+        galleryName={qrGallery.name}
+        accessLink={qrGallery.access_link}
+        onClose={() => setQrGallery(null)}
+      />
+    )}
 
     {/* ── Delete Confirmation Modal ── */}
     {confirmDelete && (
