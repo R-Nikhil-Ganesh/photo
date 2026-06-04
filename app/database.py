@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     resend_api_key: str = "re_demo_key"
 
     class Config:
-        env_file = ".env"
+        env_file = ".env.prod"
         extra = "ignore"
 
 settings = Settings()
