@@ -12,7 +12,12 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import LandingPage from './components/LandingPage';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder-google-client-id.apps.googleusercontent.com';
+
+if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+  console.warn("Warning: VITE_GOOGLE_CLIENT_ID environment variable is missing. Google Login features will not work until this is configured in Vercel settings.");
+}
+
 
 // The top-nav is only shown on pages that aren't the dashboard.
 // The dashboard has its own sidebar + full-page layout.

@@ -40,10 +40,14 @@ export default defineConfig(({ mode }) => {
   const define = {}
 
   if (isProductionBuild) {
-    define['import.meta.env.VITE_CLOUDINARY_CLOUD_NAME'] = JSON.stringify(prodEnv.VITE_CLOUDINARY_CLOUD_NAME || '')
-    define['import.meta.env.VITE_GOOGLE_CLIENT_ID'] = JSON.stringify(prodEnv.GOOGLE_CLIENT_ID || '')
-    define['import.meta.env.VITE_API_URL'] = prodEnv.VITE_API_URL
-      ? JSON.stringify(prodEnv.VITE_API_URL)
+    const cloudinaryCloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || prodEnv.VITE_CLOUDINARY_CLOUD_NAME || ''
+    const googleClientId = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || prodEnv.GOOGLE_CLIENT_ID || ''
+    const apiUrl = process.env.VITE_API_URL || prodEnv.VITE_API_URL || ''
+
+    define['import.meta.env.VITE_CLOUDINARY_CLOUD_NAME'] = JSON.stringify(cloudinaryCloudName)
+    define['import.meta.env.VITE_GOOGLE_CLIENT_ID'] = JSON.stringify(googleClientId)
+    define['import.meta.env.VITE_API_URL'] = apiUrl
+      ? JSON.stringify(apiUrl)
       : 'window.location.origin'
   }
 
