@@ -980,11 +980,10 @@ export default function LandingPage() {
               <div className="lp-testimonial-card-single">
                 <div className="lp-testimonial-quote-mark">“</div>
                 <blockquote className="lp-story-quote">
-                  This would have saved me 3 hours after my last wedding shoot.
+                  Can't wait to use this in our next meetings
                 </blockquote>
                 <div className="lp-story-quote-author">
-                  <div className="lp-quote-author-name">— Nikhil G</div>
-                  <div className="lp-quote-author-title">Beta Tester & Wedding Photographer</div>
+                  <div className="lp-quote-author-name">— Hive</div>
                 </div>
               </div>
             </div>
