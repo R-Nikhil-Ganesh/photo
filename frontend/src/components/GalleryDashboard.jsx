@@ -859,7 +859,7 @@ export default function GalleryDashboard() {
 
   const sidebarProps = {
     user, initials, subStatus, usagePercent, activeNav, setActiveNav,
-    navigate, logout, atLimit,
+    setActiveGallery, navigate, logout, atLimit,
   };
 
   // Collection detail view
@@ -1004,7 +1004,7 @@ export default function GalleryDashboard() {
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ user, initials, subStatus, usagePercent, activeNav, setActiveNav, navigate, logout, atLimit }) {
+function Sidebar({ user, initials, subStatus, usagePercent, activeNav, setActiveNav, setActiveGallery, navigate, logout, atLimit }) {
   const NAV = [
     { id: 'collections', icon: FolderOpen, label: 'Collections' },
     { id: 'settings', icon: Settings, label: 'Settings' },
@@ -1025,7 +1025,10 @@ function Sidebar({ user, initials, subStatus, usagePercent, activeNav, setActive
             key={id}
             id={`nav-${id}`}
             className={`db-nav-item ${activeNav === id ? 'active' : ''}`}
-            onClick={() => setActiveNav(id)}
+            onClick={() => {
+              setActiveNav(id);
+              if (setActiveGallery) setActiveGallery(null);
+            }}
             aria-current={activeNav === id ? 'page' : undefined}
           >
             <Icon size={17} />
