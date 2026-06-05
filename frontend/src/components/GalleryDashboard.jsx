@@ -436,8 +436,8 @@ function AIChatPanel() {
   return (
     <div className="db-settings-panel db-card">
       <div className="db-card-header">
-        <h2 className="db-card-title"><Sparkles size={20} className="db-gold" /> Gemini 3.0 Flash Assistant</h2>
-        <p className="db-card-desc">Chat with the intelligent assistant powered by Gemini 3.0 Flash</p>
+        <h2 className="db-card-title"><Sparkles size={20} className="db-gold" /> Gemini 3.5 Flash Assistant</h2>
+        <p className="db-card-desc">Chat with the intelligent assistant powered by Gemini 3.5 Flash</p>
       </div>
       <div className="db-card-content" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '60vh' }}>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
