@@ -424,7 +424,7 @@ function AIChatPanel() {
     
     try {
       // NOTE: use axios instead of fetch to match project conventions
-      const res = await axios.post('/ai/chat', { prompt: userMsg, system_instruction: "You are a helpful AI assistant in the Photoshi gallery app." }, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.post(`${API_BASE_URL}/ai/chat`, { prompt: userMsg, system_instruction: "You are a helpful AI assistant in the Photoshi gallery app." }, { headers: { Authorization: `Bearer ${token}` } });
       setMessages(prev => [...prev, { role: 'ai', text: res.data.response }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'ai', text: "Error: Could not reach AI." }]);
