@@ -24,4 +24,22 @@ try:
 except Exception as e:
     print(f"Column might already exist or error: {e}")
 
+print("Adding description column to photos table if not exists...")
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE photos ADD COLUMN description TEXT;"))
+        conn.commit()
+    print("Column description added.")
+except Exception as e:
+    print(f"Column might already exist or error: {e}")
+
+print("Adding tags column to photos table if not exists...")
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE photos ADD COLUMN tags TEXT;"))
+        conn.commit()
+    print("Column tags added.")
+except Exception as e:
+    print(f"Column might already exist or error: {e}")
+
 print("DB init complete.")

@@ -407,7 +407,7 @@ export default function LandingPage() {
           strokeWidth="46"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#rb-glow)"
+
         />
 
         {/* Ribbon 2 — mid-weight, enters slightly lower */}
@@ -428,7 +428,7 @@ export default function LandingPage() {
           strokeWidth="30"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#rb-glow)"
+
         />
 
         {/* Ribbon 3 — outer sweep, enters higher */}
@@ -449,11 +449,12 @@ export default function LandingPage() {
           strokeWidth="20"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#rb-glow)"
+
         />
 
         {/* Ribbon 4 — fine accent, bright inner shine */}
         <path
+          className="glow"
           ref={path4Ref}
           d="
             M 1440 340
@@ -470,11 +471,12 @@ export default function LandingPage() {
           strokeWidth="11"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#rb-glow-sharp)"
+
         />
 
         {/* Ribbon 5 — luminous core highlight */}
         <path
+          className="glow"
           ref={path5Ref}
           d="
             M 1440 370
@@ -491,11 +493,12 @@ export default function LandingPage() {
           strokeWidth="5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#rb-glow-sharp)"
+
         />
 
         {/* Ribbon 6 — Animated Energy Pulse */}
         <path
+          className="glow"
           ref={path6Ref}
           d="
             M 1440 370
@@ -512,7 +515,7 @@ export default function LandingPage() {
           strokeWidth="5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#rb-glow-sharp)"
+
         />
       </svg>
 

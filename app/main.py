@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import gallery, webhook, search, auth, admin, subscription, samples
+from app.routers import gallery, webhook, search, auth, admin, subscription, samples, ai
 from sqlalchemy import text
 import logging
 
@@ -37,6 +37,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(subscription.router)
 app.include_router(samples.router)
+app.include_router(ai.router)
 
 @app.get("/")
 def root():

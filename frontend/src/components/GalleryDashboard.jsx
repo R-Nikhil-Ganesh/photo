@@ -528,6 +528,152 @@ function AccountPanel({ user, navigate, logout }) {
   );
 }
 
+// ─── AI Image Generation Tab ──────────────────────────────────────────────────
+function AIGenerateTab({ gallery, token, onImageGenerated }) {
+  const [prompt, setPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [loading, setLoading] = useState(false);
+  const [resultPhoto, setResultPhoto] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleGenerate = async (e) => {
+    e.preventDefault();
+    if (!prompt.trim()) return;
+
+    setLoading(true);
+    setError(null);
+    setResultPhoto(null);
+
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/ai/generate-to-gallery`,
+        {
+          gallery_id: gallery.id,
+          prompt: prompt.trim(),
+          aspect_ratio: aspectRatio,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (res.data.status === 'success') {
+        setResultPhoto(res.data.photo);
+        setPrompt('');
+        if (onImageGenerated) {
+          onImageGenerated();
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.detail || 'Failed to generate image. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="db-photos-panel" style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-serif)', color: 'var(--text)', marginBottom: '0.5rem' }}>
+          Generate AI Photo with Imagen 3
+        </h2>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Create high-resolution AI art or custom photos and save them directly into this collection.
+        </p>
+      </div>
+
+      <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="db-form-group">
+          <label className="db-label" htmlFor="ai-prompt">Image Prompt</label>
+          <textarea
+            id="ai-prompt"
+            className="db-input"
+            rows={4}
+            placeholder="e.g. A gorgeous bridal bouquet with pastel pink roses and eucalyptus leaves, sitting on a rustic wooden table, cinematic lighting, 8k..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            style={{ resize: 'none', minHeight: '100px', padding: '12px' }}
+            disabled={loading}
+          />
+        </div>
+
+        <div className="db-form-group">
+          <label className="db-label">Aspect Ratio</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[
+              { val: '1:1', label: 'Square (1:1)' },
+              { val: '3:4', label: 'Portrait (3:4)' },
+              { val: '4:3', label: 'Landscape (4:3)' },
+            ].map(({ val, label }) => (
+              <button
+                key={val}
+                type="button"
+                className={`db-btn-ghost-sm ${aspectRatio === val ? 'active' : ''}`}
+                onClick={() => setAspectRatio(val)}
+                disabled={loading}
+                style={{
+                  border: aspectRatio === val ? '1px solid var(--gold)' : '1px solid var(--border-strong)',
+                  background: aspectRatio === val ? 'rgba(201, 169, 110, 0.08)' : 'transparent',
+                  color: aspectRatio === val ? 'var(--gold)' : 'var(--text-muted)',
+                  height: '40px',
+                  borderRadius: '6px'
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <div style={{ color: 'rgba(239, 68, 68, 0.9)', fontSize: '0.85rem', display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <AlertCircle size={14} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="db-btn-primary"
+          disabled={loading || !prompt.trim()}
+          style={{ height: '46px', width: '100%', justifyContent: 'center' }}
+        >
+          {loading ? (
+            <>
+              <span className="db-spinner" style={{ marginRight: '8px' }} />
+              Generating with Imagen 3...
+            </>
+          ) : (
+            <>
+              <Sparkles size={16} style={{ marginRight: '8px' }} />
+              Generate Image
+            </>
+          )}
+        </button>
+      </form>
+
+      {resultPhoto && (
+        <div style={{ marginTop: '2rem', padding: '1rem', border: '1px solid var(--border-strong)', borderRadius: '8px', background: 'rgba(255,255,255,0.01)', textAlign: 'center' }} className="animate-fade-in">
+          <div style={{ fontSize: '0.85rem', color: 'var(--gold)', fontWeight: '500', marginBottom: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
+            <Check size={14} /> Generated & Saved Successfully!
+          </div>
+          <img
+            src={resultPhoto.url}
+            alt="AI Generated result"
+            style={{ width: '100%', maxHeight: '320px', objectFit: 'contain', borderRadius: '6px', border: '1px solid var(--border-strong)', marginBottom: '1rem' }}
+          />
+          <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '6px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>AI Description</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '10px' }}>{resultPhoto.description}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>AI Tags</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--gold)' }}>{resultPhoto.tags}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Collection detail view ───────────────────────────────────────────────────
 function CollectionDetail({ gallery, onBack, token }) {
   const navigate = useNavigate();
@@ -597,6 +743,7 @@ function CollectionDetail({ gallery, onBack, token }) {
         {[
           { id: 'upload', icon: Camera, label: 'Upload Photos' },
           { id: 'photos', icon: Image, label: 'Photos & Favorites' },
+          { id: 'ai-generate', icon: Sparkles, label: 'Generate AI Photo' },
         ].map(({ id, icon: Icon, label }) => (
           <button
             key={id}
@@ -610,6 +757,9 @@ function CollectionDetail({ gallery, onBack, token }) {
 
       <div className="db-detail-content">
         {activeTab === 'upload' && <GalleryUploader gallery={gallery} />}
+        {activeTab === 'ai-generate' && (
+          <AIGenerateTab gallery={gallery} token={token} onImageGenerated={fetchPhotos} />
+        )}
         {activeTab === 'photos' && (
           <div className="db-photos-panel">
             <div className="db-photos-controls">

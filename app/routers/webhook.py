@@ -28,7 +28,18 @@ def process_and_index_faces(webhook_data: dict, gallery_id_str: str):
         db.commit()
         db.refresh(new_photo)
 
-        # 2. Save pre-computed IndexedFaces
+        # 2. Generate and save Gemini metadata (description & tags)
+        try:
+            from app.services.google_service import google_ai
+            metadata = google_ai.generate_image_metadata(new_photo.url)
+            new_photo.description = metadata.get("description")
+            new_photo.tags = metadata.get("tags")
+            db.commit()
+            logger.info(f"Gemini auto-tagged photo {new_photo.id}: {new_photo.tags}")
+        except Exception as meta_err:
+            logger.error(f"Failed to generate Gemini metadata: {meta_err}")
+
+        # 3. Save pre-computed IndexedFaces
         faces = webhook_data.get('faces', [])
         for face in faces:
             indexed_face = IndexedFace(

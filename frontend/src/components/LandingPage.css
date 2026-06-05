@@ -1849,3 +1849,8 @@ body {
   .lp-footer-bottom { flex-direction: column; text-align: center; }
   .lp-plan-card { padding: 24px 20px; }
 }
+
+.lp-ribbon-canvas path { will-change: stroke-dashoffset; transform: translateZ(0); }
+
+.lp-ribbon-canvas path.glow { filter: drop-shadow(0 0 12px rgba(253, 224, 71, 0.4)) drop-shadow(0 0 4px rgba(253, 224, 71, 0.8)); }
+.lp-ribbon-canvas path { will-change: stroke-dashoffset, filter; }

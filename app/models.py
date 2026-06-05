@@ -53,6 +53,8 @@ class Photo(Base):
     height = Column(Integer)
     url = Column(String)
     is_favorite = Column(Integer, default=0)  # 0 = normal, 1 = favorited for album printing
+    description = Column(String, nullable=True)
+    tags = Column(String, nullable=True)
     
     gallery = relationship("Gallery", back_populates="photos")
     faces = relationship("IndexedFace", back_populates="photo")

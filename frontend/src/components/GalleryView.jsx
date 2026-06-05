@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Download, Loader2, User } from 'lucide-react';
+import { Download, Loader2, User, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -24,6 +24,31 @@ export default function GalleryView() {
   const [galleryFaces, setGalleryFaces] = useState([]);
   const [selectedFaceUrl, setSelectedFaceUrl] = useState(null);
   const [myMatchedUrls, setMyMatchedUrls] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchingText, setIsSearchingText] = useState(false);
+
+  const handleTextSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) {
+      setIsFiltered(false);
+      setMatchedUrls([]);
+      setSelectedFaceUrl(null);
+      return;
+    }
+
+    setIsSearchingText(true);
+    setSelectedFaceUrl(null); // Clear selected face avatar highlights when using text search
+    try {
+      const res = await axios.get(`${API_BASE_URL}/search/${accessLink}/text?q=${encodeURIComponent(searchQuery.trim())}`);
+      setMatchedUrls(res.data.matched_urls);
+      setIsFiltered(true);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to search photos.');
+    } finally {
+      setIsSearchingText(false);
+    }
+  };
 
   useEffect(() => {
     loadGalleryData();
@@ -284,6 +309,65 @@ export default function GalleryView() {
           </div>
         </div>
       )}
+
+      {/* Natural Language Text Search */}
+      <div style={{ marginBottom: '2.5rem', maxWidth: '500px' }}>
+        <div className="panel-label" style={{ marginBottom: '0.75rem' }}>Search by description (AI Tagging)</div>
+        <form onSubmit={handleTextSearch} style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="text"
+              placeholder="e.g. bride smiling, beach sunset, group photo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="db-input"
+              style={{
+                width: '100%',
+                paddingLeft: '36px',
+                height: '42px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-strong)',
+                background: 'rgba(255, 255, 255, 0.03)',
+                color: 'var(--text)',
+                fontSize: '0.9rem'
+              }}
+            />
+            <Search 
+              size={16} 
+              style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                color: 'var(--text-muted)' 
+              }} 
+            />
+          </div>
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            style={{ height: '42px', padding: '0 20px', borderRadius: '8px' }}
+            disabled={isSearchingText}
+          >
+            {isSearchingText ? <Loader2 className="animate-spin" size={16} /> : 'Search'}
+          </button>
+          {isFiltered && (
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ height: '42px', padding: '0 15px', borderRadius: '8px' }}
+              onClick={() => {
+                setSearchQuery('');
+                setIsFiltered(false);
+                setMatchedUrls([]);
+                setSelectedFaceUrl(null);
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </form>
+      </div>
 
       {displayedPhotos.length === 0 ? (
         <div className="gallery-empty">

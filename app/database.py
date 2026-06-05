@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     google_client_id: str = "demo-client-id"
     jwt_secret: str = "super-secret-key-change-in-prod"
     resend_api_key: str = "re_demo_key"
+    gemini_api_key: str = ""
 
     class Config:
         env_file = ".env.prod"
