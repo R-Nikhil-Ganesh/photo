@@ -184,6 +184,22 @@ select:focus-visible,
   letter-spacing: 0.12em;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.mobile-menu-toggle:hover {
+  color: var(--gold);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .nav-button {
   min-height: 38px;
   padding: 0.45rem 0.95rem;
@@ -194,9 +210,9 @@ select:focus-visible,
 .btn-secondary,
 .btn-ghost,
 .btn-upgrade {
-  min-height: 40px;
+  min-height: 48px;
   border-radius: var(--radius-full);
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 1.2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -262,7 +278,7 @@ select:focus-visible,
 
 .input-field {
   width: 100%;
-  min-height: 44px;
+  min-height: 48px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border-strong);
   background: var(--bg-input);
@@ -1216,13 +1232,26 @@ select:focus-visible,
   }
 
   .nav-inner {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
   }
 
   .nav-actions {
     width: 100%;
-    justify-content: flex-start;
+    flex-direction: column;
+    align-items: stretch;
+    display: none;
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .nav-actions-open {
+    display: flex;
   }
 
   .page-header {

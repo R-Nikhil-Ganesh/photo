@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
@@ -25,6 +25,7 @@ function Navigation() {
   const navigate = useNavigate();
   const { user, token, logout } = useAuth();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Hide the global nav when the user is on "/" and authenticated
   // (GalleryDashboard renders its own sidebar navigation)
@@ -34,25 +35,42 @@ function Navigation() {
   return (
     <nav className="nav-container">
       <div className="nav-inner">
-        <Link to="/" className="nav-logo">
+        <Link to="/" className="nav-logo" onClick={() => setMobileMenuOpen(false)}>
           Fr<span className="nav-logo-accent">a</span>my
         </Link>
-        <div className="nav-actions">
+
+        {/* Mobile Toggle */}
+        <button 
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </button>
+
+        <div className={`nav-actions ${mobileMenuOpen ? 'nav-actions-open' : ''}`}>
           {token ? (
             <>
               <span className="nav-user" title={user?.name}>{user?.name}</span>
               <button
-                onClick={() => navigate('/signup?mode=update')}
+                onClick={() => { setMobileMenuOpen(false); navigate('/signup?mode=update'); }}
                 className="btn-secondary nav-button"
               >
                 Update Face
               </button>
-              <button onClick={logout} className="btn-secondary nav-button">
+              <button onClick={() => { setMobileMenuOpen(false); logout(); }} className="btn-secondary nav-button">
                 Logout
               </button>
             </>
           ) : (
-            <button onClick={() => navigate('/signup')} className="btn-primary nav-button">
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }} className="btn-primary nav-button">
               Sign In
             </button>
           )}

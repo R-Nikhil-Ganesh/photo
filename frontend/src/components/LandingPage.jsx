@@ -30,6 +30,7 @@ export default function LandingPage() {
   const path3Ref = useRef(null);
   const path4Ref = useRef(null);
   const path5Ref = useRef(null);
+  const path6Ref = useRef(null);
 
   // States for interactive mockup demonstrations
   const [deepDiveTab, setDeepDiveTab] = useState('all');
@@ -96,7 +97,7 @@ export default function LandingPage() {
   useEffect(() => {
     const HERO_FRAC    = 0.08;           // fraction of path visible in the hero
     const DRAW_MS      = 1800;           // draw-in duration for the first ribbon
-    const STAGGER      = [0, 160, 320, 80, 240]; // per-ribbon draw-in delay (ms)
+    const STAGGER      = [0, 160, 320, 80, 240, 120]; // per-ribbon draw-in delay (ms)
     const ALL_DONE_MS  = DRAW_MS + 320 + 50;     // when last ribbon finishes
 
     const pathDefs = [
@@ -105,6 +106,7 @@ export default function LandingPage() {
       { ref: path3Ref, lag: 0.06, ampFrac: 0.14, speed: 0.75, wavePhase: Math.PI * 0.8   },
       { ref: path4Ref, lag: 0.02, ampFrac: 0.07, speed: 1.15, wavePhase: Math.PI * 0.2   },
       { ref: path5Ref, lag: 0.05, ampFrac: 0.10, speed: 0.95, wavePhase: Math.PI * 0.6   },
+      { ref: path6Ref, lag: 0.04, ampFrac: 0.11, speed: 1.00, wavePhase: Math.PI * 0.5   },
     ];
 
     let pathsReady = false;
@@ -112,14 +114,15 @@ export default function LandingPage() {
 
     // Use getPointAtLength to precisely trigger section reveals based on
     // the true SVG Y-coordinate of the primary ribbon's tip.
+    // svgX is the approximate X coordinate where the ribbon passes svgY.
     const CHECKPOINTS = [
-      { key: 'trust',        svgY: 900  },
-      { key: 'problem',      svgY: 1400 },
-      { key: 'steps',        svgY: 2000 },
-      { key: 'product',      svgY: 2600 },
-      { key: 'testimonials', svgY: 3400 },
-      { key: 'pricing',      svgY: 4000 },
-      { key: 'cta',          svgY: 4700 },
+      { key: 'trust',        svgY: 900,  svgX: 362 },
+      { key: 'problem',      svgY: 1400, svgX: 174 },
+      { key: 'steps',        svgY: 2000, svgX: 397 },
+      { key: 'product',      svgY: 2600, svgX: 800 },
+      { key: 'testimonials', svgY: 3400, svgX: 867 },
+      { key: 'pricing',      svgY: 4000, svgX: 600 },
+      { key: 'cta',          svgY: 4700, svgX: 428 },
     ];
     const revealed = new Set();
 
@@ -237,19 +240,8 @@ export default function LandingPage() {
         // ─ Checkpoint-driven: smoothly animate ribbon to active section's target ─
         const newTarget = getActiveTargetFrac();
         
-        if (newTarget === 0.0 && targetFrac > 0.0) {
-          // User scrolled all the way back up to hero. Fully reset the effect.
-          targetFrac = 0;
-          currentFrac = 0;
-          revealed.clear();
-          Object.values(revealSettersRef.current).forEach(setter => setter(false));
-          phase = 'drawIn';
-          drawInT0 = null;
-          idleT0 = null;
-        } else {
-          // Only allow targetFrac to increase so the ribbon never retracts on scroll up
-          targetFrac = Math.max(targetFrac, newTarget);
-        }
+        // Only allow targetFrac to increase so the ribbon never retracts on scroll up
+        targetFrac = Math.max(targetFrac, newTarget);
         
         // Time-independent lerp currentFrac towards targetFrac
         const diff = targetFrac - currentFrac;
@@ -360,6 +352,14 @@ export default function LandingPage() {
             <stop offset="38%"  stopColor="#c9a96e" stopOpacity="0.65"/>
             <stop offset="73%"  stopColor="#7a5b28" stopOpacity="0.22"/>
             <stop offset="100%" stopColor="#050508" stopOpacity="0"  />
+          </linearGradient>
+
+          {/* Continuous Flowing Energy Gradient */}
+          <linearGradient id="rb-grad-pulse" x1="0" y1="0" x2="0" y2="540" gradientUnits="userSpaceOnUse" spreadMethod="reflect">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+            <stop offset="15%" stopColor="#fde047" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#a16207" stopOpacity="0" />
+            <animateTransform attributeName="gradientTransform" type="translate" from="0 -540" to="0 540" dur="1.5s" repeatCount="indefinite" />
           </linearGradient>
 
           {/* Layered outer glow */}
@@ -493,7 +493,50 @@ export default function LandingPage() {
           strokeLinejoin="round"
           filter="url(#rb-glow-sharp)"
         />
+
+        {/* Ribbon 6 — Animated Energy Pulse */}
+        <path
+          ref={path6Ref}
+          d="
+            M 1440 370
+            C 1273 428, 1108 510, 964 686
+            C 820 862, 805 1082, 946 1278
+            C 1087 1474, 1166 1654, 1046 1888
+            C 926 2122, 672 2258, 532 2518
+            C 392 2778, 392 2998, 572 3218
+            C 752 3438, 967 3558, 888 3818
+            C 809 4078, 549 4218, 409 4498
+            C 269 4778, 349 5018, 629 5218
+          "
+          stroke="url(#rb-grad-pulse)"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#rb-glow-sharp)"
+        />
       </svg>
+
+      {/* ── CHECKPOINT NODES ──────────────────────────────────────────────── */}
+      {/* These points render exactly over the ribbon at the section checkpoints, pulsing when the ribbon touches them. */}
+      {[
+        { key: 'trust',        svgY: 900,  svgX: 362, active: trustIn },
+        { key: 'problem',      svgY: 1400, svgX: 174, active: problemIn },
+        { key: 'steps',        svgY: 2000, svgX: 397, active: stepsIn },
+        { key: 'product',      svgY: 2600, svgX: 800, active: productIn },
+        { key: 'testimonials', svgY: 3400, svgX: 867, active: testimonialsIn },
+        { key: 'pricing',      svgY: 4000, svgX: 600, active: pricingIn },
+        { key: 'cta',          svgY: 4700, svgX: 428, active: ctaIn },
+      ].map(({ key, svgY, svgX, active }) => (
+        <div 
+          key={key} 
+          className={`lp-node ${active ? 'active' : ''}`}
+          style={{
+            top: `${(svgY / 5400) * 100}%`,
+            left: `${(svgX / 1440) * 100}%`
+          }}
+        />
+      ))}
+
 
       {/* ── HERO ───────────────────────────────────────────────────────────── */}
       <section
