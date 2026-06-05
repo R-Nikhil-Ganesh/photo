@@ -407,7 +407,58 @@ function DeleteModal({ gallery, onConfirm, onCancel }) {
   );
 }
 
-// ─── Settings panel ───────────────────────────────────────────────────────────
+function AIChatPanel() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { token } = useAuth();
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    
+    const userMsg = input;
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setInput('');
+    setLoading(true);
+    
+    try {
+      // NOTE: use axios instead of fetch to match project conventions
+      const res = await axios.post('/ai/chat', { prompt: userMsg, system_instruction: "You are a helpful AI assistant in the Photoshi gallery app." }, { headers: { Authorization: `Bearer ${token}` } });
+      setMessages(prev => [...prev, { role: 'ai', text: res.data.response }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'ai', text: "Error: Could not reach AI." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="db-settings-panel db-card">
+      <div className="db-card-header">
+        <h2 className="db-card-title"><Sparkles size={20} className="db-gold" /> Gemini 3.0 Flash Assistant</h2>
+        <p className="db-card-desc">Chat with the intelligent assistant powered by Gemini 3.0 Flash</p>
+      </div>
+      <div className="db-card-content" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '60vh' }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+          {messages.length === 0 && <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: 'auto', marginBottom: 'auto' }}>How can I help you today?</div>}
+          {messages.map((msg, i) => (
+            <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', background: msg.role === 'user' ? 'var(--gold)' : 'rgba(255,255,255,0.1)', color: msg.role === 'user' ? '#000' : '#fff', padding: '0.8rem 1.2rem', borderRadius: '12px', maxWidth: '80%' }}>
+              {msg.text}
+            </div>
+          ))}
+          {loading && <div style={{ alignSelf: 'flex-start', color: 'var(--gold)' }}>Thinking...</div>}
+        </div>
+        <form onSubmit={handleSend} style={{ display: 'flex', gap: '0.5rem' }}>
+          <input type="text" className="db-input" value={input} onChange={e => setInput(e.target.value)} placeholder="Ask anything..." style={{ flex: 1 }} />
+          <button type="submit" className="db-btn db-btn-primary" disabled={loading}>Send</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings Panel ───────────────────────────────────────────────────────────
 function SettingsPanel({ navigate }) {
   return (
     <div className="db-panel-root">
@@ -876,6 +927,16 @@ export default function GalleryDashboard() {
 
   // Main canvas content based on active nav
   const renderCanvas = () => {
+    if (activeNav === 'ai') {
+      return (
+        <>
+          <div className="db-canvas-body">
+            <AIChatPanel />
+          </div>
+        </>
+      );
+    }
+
     if (activeNav === 'settings') {
       return (
         <>
@@ -1007,6 +1068,7 @@ export default function GalleryDashboard() {
 function Sidebar({ user, initials, subStatus, usagePercent, activeNav, setActiveNav, setActiveGallery, navigate, logout, atLimit }) {
   const NAV = [
     { id: 'collections', icon: FolderOpen, label: 'Collections' },
+    { id: 'ai', icon: Sparkles, label: 'AI Chat' },
     { id: 'settings', icon: Settings, label: 'Settings' },
     { id: 'account', icon: User, label: 'Account' },
   ];

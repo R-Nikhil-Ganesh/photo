@@ -2,7 +2,7 @@
 
 This document highlights the powerful Google AI services seamlessly integrated into the Photoshi application, showcasing how they elevate the user experience, boost efficiency, and add a layer of creative intelligence to our platform.
 
-## 🌟 Gemini 2.5 Flash: Intelligent Image Understanding
+## 🌟 Gemini 3.0 Flash: Intelligent Image Understanding
 We leverage the lightning-fast multimodal capabilities of **Gemini 2.5 Flash** to automatically understand and categorize content.
 - **Auto-Tagging & Descriptions**: Every time an image is uploaded or processed, Gemini analyzes the visual content and automatically generates natural language descriptions and highly relevant search tags.
 - **Enhanced Discoverability**: Users no longer have to manually label their photos. The AI does the heavy lifting, making the entire gallery instantly searchable and beautifully organized.

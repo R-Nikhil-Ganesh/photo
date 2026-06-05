@@ -7,6 +7,7 @@ from app.services.google_service import google_ai
 import cloudinary.uploader
 from app.services.cloudinary_service import init_cloudinary
 from pydantic import BaseModel
+from typing import Optional
 import io
 
 router = APIRouter(prefix="/ai", tags=["AI Integration"])
@@ -19,6 +20,10 @@ class GenerateImageRequest(BaseModel):
 class AnalyzeImageRequest(BaseModel):
     image_url: str
     prompt: str
+
+class ChatRequest(BaseModel):
+    prompt: str
+    system_instruction: Optional[str] = None
 
 @router.post("/generate-to-gallery")
 def generate_and_upload_to_gallery(
@@ -92,3 +97,18 @@ async def analyze_image_url(
         return {"analysis": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/chat")
+def chat_with_ai(
+    req: ChatRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Chat with Gemini Flash model directly.
+    """
+    try:
+        response_text = google_ai.generate_text(req.prompt, req.system_instruction)
+        return {"response": response_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
