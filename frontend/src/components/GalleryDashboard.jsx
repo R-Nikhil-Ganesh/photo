@@ -1,488 +1,939 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Copy, Check, ChevronLeft, UserCircle2, X, Trash2, QrCode, Heart } from 'lucide-react';
+import {
+  FolderOpen, QrCode, Trash2, Settings, User, LogOut,
+  Plus, ArrowRight, X, Check, ChevronRight, Camera,
+  Lock, Globe, Calendar, Zap, Image,
+  Heart, Copy, UserCircle2, AlertCircle, ExternalLink,
+  Share2, Sparkles, Shield, Bell, CreditCard, Key
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import GalleryUploader from './LiveBooth';
 import QRModal from './QRModal';
+import './Dashboard.css';
+import ghostBg from '../assets/ghost_bg.jpg';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// ─── New Collection Modal ─────────────────────────────────────────────────────
+function NewCollectionModal({ onClose, onCreated }) {
+  const { token } = useAuth();
+  const [step, setStep] = useState(1);
+  const [leaving, setLeaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const [form, setForm] = useState({
+    name: '',
+    eventDate: '',
+    isPublic: true,
+    faceMatchEnabled: true,
+    pinEnabled: false,
+    pin: '',
+  });
+
+  const nameRef = useRef(null);
+  useEffect(() => { nameRef.current?.focus(); }, []);
+
+  const canProceed1 = form.name.trim().length >= 2;
+
+  const goNext = () => {
+    setLeaving(true);
+    setTimeout(() => { setStep(s => s + 1); setLeaving(false); }, 220);
+  };
+  const goPrev = () => {
+    setLeaving(true);
+    setTimeout(() => { setStep(s => s - 1); setLeaving(false); }, 220);
+  };
+
+  const handleCreate = async () => {
+    if (!form.name.trim()) return;
+    setCreating(true);
+    try {
+      await axios.post(
+        `${API_BASE_URL}/gallery/`,
+        { name: form.name.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      onCreated();
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create collection');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const STEPS = ['Name & Date', 'Access', 'Confirm'];
+
+  return (
+    <div className="db-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="New Collection">
+      <div className="db-modal" onClick={e => e.stopPropagation()}>
+        {/* Modal Header */}
+        <div className="db-modal-header">
+          <div className="db-modal-step-indicator">
+            {STEPS.map((label, i) => {
+              const n = i + 1;
+              const done = step > n;
+              const active = step === n;
+              return (
+                <React.Fragment key={n}>
+                  <div className={`db-step-dot ${active ? 'active' : ''} ${done ? 'done' : ''}`}>
+                    {done ? <Check size={11} /> : n}
+                  </div>
+                  <div className={`db-step-label ${active ? 'active' : ''}`}>{label}</div>
+                  {i < STEPS.length - 1 && (
+                    <div className={`db-step-line ${step > n ? 'done' : ''}`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <button className="db-modal-close" onClick={onClose} aria-label="Close">
+            <X size={17} />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className={`db-modal-body ${leaving ? 'db-slide-out' : 'db-slide-in'}`}>
+          {/* Step 1 */}
+          {step === 1 && (
+            <div className="db-modal-step">
+              <div className="db-modal-step-eyebrow">Step 1 of 3</div>
+              <h2 className="db-modal-h2">Name your collection</h2>
+              <p className="db-modal-desc">Give this event a name. Your guests will see this when they access the gallery.</p>
+              <div className="db-form-group">
+                <label className="db-label" htmlFor="modal-collection-name">Collection Name</label>
+                <input
+                  ref={nameRef}
+                  id="modal-collection-name"
+                  className="db-input"
+                  placeholder="e.g. Sarah & James Wedding"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && canProceed1 && goNext()}
+                  maxLength={80}
+                />
+                <span className="db-input-hint">{form.name.length}/80 characters</span>
+              </div>
+              <div className="db-form-group">
+                <label className="db-label" htmlFor="modal-event-date">
+                  <Calendar size={13} /> Event Date <span className="db-label-optional">(optional)</span>
+                </label>
+                <input
+                  id="modal-event-date"
+                  type="date"
+                  className="db-input db-input-date"
+                  value={form.eventDate}
+                  onChange={e => setForm(f => ({ ...f, eventDate: e.target.value }))}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 */}
+          {step === 2 && (
+            <div className="db-modal-step">
+              <div className="db-modal-step-eyebrow">Step 2 of 3</div>
+              <h2 className="db-modal-h2">Access settings</h2>
+              <p className="db-modal-desc">Choose how guests will access and interact with your gallery.</p>
+
+              <div className="db-toggle-row" onClick={() => setForm(f => ({ ...f, isPublic: !f.isPublic }))}>
+                <div className="db-toggle-icon">
+                  {form.isPublic ? <Globe size={18} /> : <Lock size={18} />}
+                </div>
+                <div className="db-toggle-copy">
+                  <div className="db-toggle-title">{form.isPublic ? 'Public Gallery' : 'Private Gallery'}</div>
+                  <div className="db-toggle-desc">{form.isPublic ? 'Anyone with the link can view photos' : 'Only invited guests can access'}</div>
+                </div>
+                <div className={`db-toggle-switch ${form.isPublic ? 'on' : ''}`}><div className="db-toggle-knob" /></div>
+              </div>
+
+              <div className="db-toggle-row" onClick={() => setForm(f => ({ ...f, faceMatchEnabled: !f.faceMatchEnabled }))}>
+                <div className="db-toggle-icon"><Zap size={18} /></div>
+                <div className="db-toggle-copy">
+                  <div className="db-toggle-title">AI Face Matching</div>
+                  <div className="db-toggle-desc">{form.faceMatchEnabled ? 'Guests find their photos with a selfie' : 'Guests browse the full gallery'}</div>
+                </div>
+                <div className={`db-toggle-switch ${form.faceMatchEnabled ? 'on' : ''}`}><div className="db-toggle-knob" /></div>
+              </div>
+
+              <div className="db-toggle-row" onClick={() => setForm(f => ({ ...f, pinEnabled: !f.pinEnabled }))}>
+                <div className="db-toggle-icon"><Lock size={18} /></div>
+                <div className="db-toggle-copy">
+                  <div className="db-toggle-title">PIN Protection</div>
+                  <div className="db-toggle-desc">{form.pinEnabled ? 'Guests must enter a PIN to access' : 'No PIN required'}</div>
+                </div>
+                <div className={`db-toggle-switch ${form.pinEnabled ? 'on' : ''}`}><div className="db-toggle-knob" /></div>
+              </div>
+
+              {form.pinEnabled && (
+                <div className="db-form-group db-form-group-pin">
+                  <label className="db-label" htmlFor="modal-pin">Gallery PIN</label>
+                  <input
+                    id="modal-pin"
+                    className="db-input"
+                    placeholder="4–8 characters"
+                    value={form.pin}
+                    onChange={e => setForm(f => ({ ...f, pin: e.target.value }))}
+                    maxLength={8}
+                  />
+                </div>
+              )}
+
+              <div className="db-settings-note">
+                <AlertCircle size={13} />
+                Settings can be changed after creation from collection settings.
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 */}
+          {step === 3 && (
+            <div className="db-modal-step">
+              <div className="db-modal-step-eyebrow">Step 3 of 3</div>
+              <h2 className="db-modal-h2">Ready to create</h2>
+              <p className="db-modal-desc">Review your collection before it goes live.</p>
+
+              <div className="db-confirm-card">
+                <div className="db-confirm-card-header">
+                  <div className="db-confirm-icon"><FolderOpen size={20} /></div>
+                  <div>
+                    <div className="db-confirm-name">{form.name}</div>
+                    {form.eventDate && (
+                      <div className="db-confirm-date">
+                        <Calendar size={12} />
+                        {new Date(form.eventDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="db-confirm-attrs">
+                  <div className="db-confirm-attr">
+                    {form.isPublic ? <Globe size={13} /> : <Lock size={13} />}
+                    <span>{form.isPublic ? 'Public access' : 'Private access'}</span>
+                  </div>
+                  <div className="db-confirm-attr">
+                    <Zap size={13} />
+                    <span>Face matching {form.faceMatchEnabled ? 'enabled' : 'disabled'}</span>
+                  </div>
+                  <div className="db-confirm-attr">
+                    <Lock size={13} />
+                    <span>PIN {form.pinEnabled ? 'required' : 'not required'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="db-confirm-note">
+                After creation you'll be taken directly to your collection to start uploading photos.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="db-modal-footer">
+          {step > 1 && (
+            <button className="db-btn-ghost" onClick={goPrev} disabled={creating}>Back</button>
+          )}
+          <div style={{ flex: 1 }} />
+          {step < 3 ? (
+            <button className="db-btn-primary" onClick={goNext} disabled={step === 1 && !canProceed1}>
+              Continue <ArrowRight size={15} />
+            </button>
+          ) : (
+            <button
+              id="modal-create-collection"
+              className="db-btn-primary db-btn-create"
+              onClick={handleCreate}
+              disabled={creating}
+            >
+              {creating ? <span className="db-spinner" /> : <><FolderOpen size={15} /> Create Collection</>}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Ghost sample card (empty state preview) ──────────────────────────────────
+function GhostCollectionCard() {
+  return (
+    <div className="db-ghost-card" aria-hidden="true">
+      <div className="db-ghost-status">
+        <span className="db-ghost-dot" /> Active
+      </div>
+      <div className="db-ghost-name">Summer Wedding 2025</div>
+      <div className="db-ghost-event-date"><Calendar size={11} /> 14 June 2025</div>
+      <div className="db-ghost-stats">
+        <div className="db-ghost-stat"><Image size={12} /> 842 photos</div>
+        <div className="db-ghost-stat"><Sparkles size={12} /> 156 matched</div>
+      </div>
+      <div className="db-ghost-divider" />
+      <div className="db-ghost-footer">
+        <div className="db-ghost-link">framy.app/gallery/sw-june-2025</div>
+        <div className="db-ghost-actions">
+          <div className="db-ghost-action-btn"><Share2 size={12} /> Share</div>
+          <div className="db-ghost-action-btn"><QrCode size={12} /> QR</div>
+        </div>
+      </div>
+      <div className="db-ghost-label">Sample collection</div>
+    </div>
+  );
+}
+
+// ─── Collection card — redesigned as a proper project card ────────────────────
+function CollectionCard({ gallery, onOpen, onQR, onDelete }) {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = `${window.location.origin}/gallery/${gallery.access_link}`;
+
+  const copyLink = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <article
+      className="db-collection-card"
+      onClick={() => onOpen(gallery)}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen(gallery))}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open collection ${gallery.name}`}
+    >
+      {/* Status row */}
+      <div className="db-card-status-row">
+        <div className="db-card-status-pill">
+          <span className="db-card-status-dot" />
+          Active
+        </div>
+        <ChevronRight size={14} className="db-card-chevron" />
+      </div>
+
+      {/* Collection name */}
+      <div className="db-card-name">{gallery.name}</div>
+
+      {/* Event date placeholder */}
+      <div className="db-card-date">
+        <Calendar size={12} />
+        <span>No date set</span>
+      </div>
+
+      {/* Stats strip */}
+      <div className="db-card-stats">
+        <div className="db-card-stat">
+          <Image size={13} />
+          <span>Upload photos to see count</span>
+        </div>
+        <div className="db-card-stat db-card-stat-muted">
+          <Sparkles size={13} />
+          <span>AI matching ready</span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="db-card-divider" />
+
+      {/* Footer: share link + actions */}
+      <div className="db-card-footer">
+        <div className="db-card-share-url" title={shareUrl}>
+          <ExternalLink size={11} />
+          <span className="db-card-url-text">{shareUrl.replace('http://', '').replace('https://', '')}</span>
+        </div>
+        <div className="db-card-actions">
+          <button
+            className="db-card-action-btn"
+            onClick={copyLink}
+            title="Copy share link"
+            aria-label="Copy share link"
+          >
+            <Copy size={13} />
+            <span>{copied ? 'Copied!' : 'Share'}</span>
+          </button>
+          <button
+            className="db-card-action-btn"
+            onClick={e => { e.stopPropagation(); onQR(gallery); }}
+            title="Show QR code"
+            aria-label="Show QR code"
+          >
+            <QrCode size={13} />
+            <span>QR</span>
+          </button>
+          <button
+            className="db-card-action-btn db-card-action-danger"
+            onClick={e => { e.stopPropagation(); onDelete(gallery); }}
+            title="Delete collection"
+            aria-label="Delete collection"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// ─── "New Collection" ghost card in the populated grid ────────────────────────
+function AddCollectionCard({ onClick }) {
+  return (
+    <button className="db-add-card" onClick={onClick} aria-label="Create new collection">
+      <div className="db-add-card-inner">
+        <div className="db-add-card-icon"><Plus size={20} /></div>
+        <div className="db-add-card-label">New Collection</div>
+        <div className="db-add-card-sub">Start a new event gallery</div>
+      </div>
+    </button>
+  );
+}
+
+// ─── Delete confirm modal ─────────────────────────────────────────────────────
+function DeleteModal({ gallery, onConfirm, onCancel }) {
+  return (
+    <div className="db-modal-backdrop" onClick={onCancel}>
+      <div className="db-delete-modal" onClick={e => e.stopPropagation()}>
+        <div className="db-delete-icon"><Trash2 size={20} /></div>
+        <h3 className="db-delete-title">Delete "{gallery.name}"?</h3>
+        <p className="db-delete-desc">
+          This removes all photos and cannot be undone. Your guests will lose access immediately.
+        </p>
+        <div className="db-delete-actions">
+          <button className="db-btn-ghost" onClick={onCancel}>Cancel</button>
+          <button className="db-btn-danger" onClick={() => onConfirm(gallery)}>Delete Permanently</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings panel ───────────────────────────────────────────────────────────
+function SettingsPanel({ navigate }) {
+  return (
+    <div className="db-panel-root">
+      <div className="db-canvas-eyebrow">Preferences</div>
+      <h1 className="db-canvas-title">Settings</h1>
+      <div className="db-settings-grid">
+        <div className="db-settings-section">
+          <div className="db-settings-section-label">Gallery Defaults</div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon"><Globe size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">Default gallery visibility</div>
+              <div className="db-settings-row-desc">New collections default to public access</div>
+            </div>
+            <div className="db-settings-row-value">Public</div>
+          </div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon"><Sparkles size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">AI face matching</div>
+              <div className="db-settings-row-desc">Enable by default on new collections</div>
+            </div>
+            <div className="db-settings-row-value db-settings-enabled">Enabled</div>
+          </div>
+        </div>
+
+        <div className="db-settings-section">
+          <div className="db-settings-section-label">Notifications</div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon"><Bell size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">Guest activity alerts</div>
+              <div className="db-settings-row-desc">Notify when guests download photos</div>
+            </div>
+            <div className="db-settings-row-value">Off</div>
+          </div>
+        </div>
+
+        <div className="db-settings-section">
+          <div className="db-settings-section-label">Plan & Billing</div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon"><CreditCard size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">Manage subscription</div>
+              <div className="db-settings-row-desc">View plan limits and upgrade options</div>
+            </div>
+            <button className="db-settings-row-action" onClick={() => navigate('/subscribe')}>
+              View Plans <ArrowRight size={12} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Account panel ────────────────────────────────────────────────────────────
+function AccountPanel({ user, navigate, logout }) {
+  const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '??';
+
+  return (
+    <div className="db-panel-root">
+      <div className="db-canvas-eyebrow">Your profile</div>
+      <h1 className="db-canvas-title">Account</h1>
+
+      <div className="db-account-profile-card">
+        <div className="db-account-avatar">{initials}</div>
+        <div className="db-account-info">
+          <div className="db-account-name">{user?.name || 'Photographer'}</div>
+          <div className="db-account-email">{user?.email || '—'}</div>
+        </div>
+      </div>
+
+      <div className="db-settings-grid">
+        <div className="db-settings-section">
+          <div className="db-settings-section-label">Face Photo</div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon"><UserCircle2 size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">Face photo for AI matching</div>
+              <div className="db-settings-row-desc">
+                {user?.has_face_encoding ? 'Face photo registered — AI matching is active' : 'No face photo yet — AI matching is inactive for your account'}
+              </div>
+            </div>
+            <button className="db-settings-row-action" onClick={() => navigate('/signup?mode=update')}>
+              {user?.has_face_encoding ? 'Update' : 'Add Photo'} <ArrowRight size={12} />
+            </button>
+          </div>
+        </div>
+
+        <div className="db-settings-section">
+          <div className="db-settings-section-label">Security</div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon"><Key size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">Authentication</div>
+              <div className="db-settings-row-desc">Signed in with Google</div>
+            </div>
+            <div className="db-settings-row-value db-settings-enabled">Active</div>
+          </div>
+        </div>
+
+        <div className="db-settings-section">
+          <div className="db-settings-section-label">Session</div>
+          <div className="db-settings-row">
+            <div className="db-settings-row-icon" style={{ color: 'rgba(239, 68, 68, 0.7)' }}><LogOut size={16} /></div>
+            <div className="db-settings-row-copy">
+              <div className="db-settings-row-title">Sign out</div>
+              <div className="db-settings-row-desc">Sign out from all sessions on this device</div>
+            </div>
+            <button className="db-settings-row-action db-settings-row-danger" onClick={logout}>
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Collection detail view ───────────────────────────────────────────────────
+function CollectionDetail({ gallery, onBack, token }) {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('upload');
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [favoritingId, setFavoritingId] = useState(null);
+  const [favOnly, setFavOnly] = useState(false);
+
+  const fetchPhotos = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/gallery/${gallery.id}/photos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPhotos(res.data);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const toggleFav = async (photo) => {
+    setFavoritingId(photo.id);
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/gallery/${gallery.id}/photos/${photo.id}/favorite`,
+        {}, { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, is_favorite: res.data.is_favorite } : p));
+    } catch (err) { console.error(err); }
+    finally { setFavoritingId(null); }
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/gallery/${gallery.access_link}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const displayed = favOnly ? photos.filter(p => p.is_favorite) : photos;
+
+  return (
+    <div className="db-detail-root">
+      <div className="db-detail-topbar">
+        <button className="db-back-btn" onClick={onBack}>
+          <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
+          <span>Collections</span>
+        </button>
+        <div className="db-detail-title-row">
+          <h1 className="db-detail-title">{gallery.name}</h1>
+        </div>
+        <div className="db-detail-actions">
+          <button className="db-btn-ghost-sm" onClick={copyLink}>
+            <Copy size={13} />{copied ? 'Copied!' : 'Copy Link'}
+          </button>
+          <button className="db-btn-ghost-sm" onClick={() => setShowQR(true)}>
+            <QrCode size={13} />Show QR
+          </button>
+          <button className="db-btn-ghost-sm" onClick={() => navigate(`/gallery/${gallery.access_link}`)}>
+            <ExternalLink size={13} />Preview
+          </button>
+        </div>
+      </div>
+
+      <div className="db-detail-tabs">
+        {[
+          { id: 'upload', icon: Camera, label: 'Upload Photos' },
+          { id: 'photos', icon: Image, label: 'Photos & Favorites' },
+        ].map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            className={`db-tab ${activeTab === id ? 'active' : ''}`}
+            onClick={() => { setActiveTab(id); if (id === 'photos') fetchPhotos(); }}
+          >
+            <Icon size={13} /> {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="db-detail-content">
+        {activeTab === 'upload' && <GalleryUploader gallery={gallery} />}
+        {activeTab === 'photos' && (
+          <div className="db-photos-panel">
+            <div className="db-photos-controls">
+              <span className="db-photos-count">
+                {favOnly ? `${photos.filter(p => p.is_favorite).length} favorites` : `${photos.length} photos`}
+              </span>
+              <button className={`db-btn-ghost-sm ${favOnly ? 'active' : ''}`} onClick={() => setFavOnly(v => !v)}>
+                <Heart size={13} fill={favOnly ? 'currentColor' : 'none'} />
+                {favOnly ? 'Show all' : 'Favorites only'}
+              </button>
+            </div>
+            {loading ? (
+              <div className="db-loading">Loading photos...</div>
+            ) : displayed.length === 0 ? (
+              <div className="db-empty-photos">
+                {photos.length === 0 ? 'No photos yet. Upload from the Upload tab.' : 'No favorites marked yet.'}
+              </div>
+            ) : (
+              <div className="db-photo-grid">
+                {displayed.map(photo => {
+                  const thumb = photo.url.includes('/upload/')
+                    ? photo.url.replace('/upload/', '/upload/c_fill,w_320,h_320,q_auto/')
+                    : photo.url;
+                  return (
+                    <div key={photo.id} className="db-photo-item">
+                      <img src={thumb} alt="" loading="lazy" className="db-photo-img" />
+                      <button
+                        className={`db-fav-btn ${photo.is_favorite ? 'active' : ''}`}
+                        onClick={() => toggleFav(photo)}
+                        disabled={favoritingId === photo.id}
+                        aria-label={photo.is_favorite ? 'Remove favorite' : 'Mark as favorite'}
+                      >
+                        <Heart size={13} fill={photo.is_favorite ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showQR && <QRModal galleryName={gallery.name} accessLink={gallery.access_link} onClose={() => setShowQR(false)} />}
+    </div>
+  );
+}
+
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function GalleryDashboard() {
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
   const navigate = useNavigate();
   const [galleries, setGalleries] = useState([]);
-  const [newGalleryName, setNewGalleryName] = useState('');
-  const [activeGallery, setActiveGallery] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [subStatus, setSubStatus] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // gallery object to confirm delete
-  const [qrGallery, setQrGallery] = useState(null); // gallery to show QR for
-  const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'photos'
-  const [galleryPhotos, setGalleryPhotos] = useState([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(false);
-  const [favoritingId, setFavoritingId] = useState(null);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [activeGallery, setActiveGallery] = useState(null);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [qrGallery, setQrGallery] = useState(null);
+  const [activeNav, setActiveNav] = useState('collections');
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      fetchGalleries();
-      fetchStatus();
-    }
+    if (token) fetchAll();
   }, [token]);
 
-  const fetchGalleries = async () => {
+  const fetchAll = async () => {
+    setLoadingData(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/gallery/my`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setGalleries(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchStatus = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/subscription/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSubStatus(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const createGallery = async () => {
-    if (!newGalleryName) return;
-    try {
-      await axios.post(`${API_BASE_URL}/gallery/`, { name: newGalleryName }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNewGalleryName('');
-      fetchGalleries();
-      fetchStatus(); // refresh counts
-    } catch (err) {
-      alert(err.response?.data?.detail || "Failed to create folder");
-    }
+      const [galRes, subRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/gallery/my`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE_URL}/subscription/status`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      setGalleries(galRes.data);
+      setSubStatus(subRes.data);
+    } catch (err) { console.error(err); }
+    finally { setLoadingData(false); }
   };
 
   const deleteGallery = async (gallery) => {
     try {
       await axios.delete(`${API_BASE_URL}/gallery/delete/${gallery.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       setConfirmDelete(null);
       if (activeGallery?.id === gallery.id) setActiveGallery(null);
-      fetchGalleries();
-      fetchStatus();
+      fetchAll();
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to delete collection');
     }
   };
 
-  const copyLink = (link) => {
-    const fullLink = `${window.location.origin}/gallery/${link}`;
-    navigator.clipboard.writeText(fullLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const usagePercent = subStatus
+    ? Math.min(100, (subStatus.owned_galleries / subStatus.allowed_galleries) * 100)
+    : 0;
+  const atLimit = subStatus && subStatus.owned_galleries >= subStatus.allowed_galleries;
+  const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '??';
+
+  const sidebarProps = {
+    user, initials, subStatus, usagePercent, activeNav, setActiveNav,
+    navigate, logout, atLimit,
   };
 
-  const fetchGalleryPhotos = async (gallery) => {
-    setLoadingPhotos(true);
-    try {
-      const res = await axios.get(`${API_BASE_URL}/gallery/${gallery.id}/photos`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setGalleryPhotos(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingPhotos(false);
-    }
-  };
+  // Collection detail view
+  if (activeGallery) {
+    return (
+      <div className="db-root">
+        <Sidebar {...sidebarProps} />
+        <main className="db-main">
+          <CollectionDetail gallery={activeGallery} onBack={() => setActiveGallery(null)} token={token} />
+        </main>
+      </div>
+    );
+  }
 
-  const toggleFavorite = async (photo) => {
-    setFavoritingId(photo.id);
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/gallery/${activeGallery.id}/photos/${photo.id}/favorite`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+  // Main canvas content based on active nav
+  const renderCanvas = () => {
+    if (activeNav === 'settings') {
+      return (
+        <>
+          <div className="db-canvas-body">
+            <SettingsPanel navigate={navigate} />
+          </div>
+        </>
       );
-      setGalleryPhotos(prev =>
-        prev.map(p => p.id === photo.id ? { ...p, is_favorite: res.data.is_favorite } : p)
-      );
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setFavoritingId(null);
     }
-  };
 
-  const openGallery = (g) => {
-    setActiveGallery(g);
-    setActiveTab('upload');
-    setGalleryPhotos([]);
-    setShowFavoritesOnly(false);
+    if (activeNav === 'account') {
+      return (
+        <>
+          <div className="db-canvas-body">
+            <AccountPanel user={user} navigate={navigate} logout={logout} />
+          </div>
+        </>
+      );
+    }
+
+    // Collections (default)
+    return (
+      <>
+        {/* Canvas header — New Collection always visible */}
+        <header className="db-canvas-header">
+          <div className="db-canvas-header-left">
+            <div className="db-canvas-eyebrow">Your workspace</div>
+            <h1 className="db-canvas-title">Collections</h1>
+          </div>
+          <div className="db-canvas-header-right">
+            {/* Always show New Collection — disabled if at limit */}
+            <button
+              id="dashboard-new-collection"
+              className="db-btn-primary"
+              onClick={() => setShowNewModal(true)}
+              disabled={atLimit}
+              title={atLimit ? 'Upgrade your plan to create more collections' : undefined}
+            >
+              <Plus size={16} />
+              New Collection
+            </button>
+            <button className="db-btn-ghost-sm" onClick={() => navigate('/subscribe')}>
+              {atLimit ? 'Upgrade Plan' : 'Manage Plan'}
+            </button>
+          </div>
+        </header>
+
+        {/* Collections canvas */}
+        <div className="db-canvas-body">
+          {loadingData ? (
+            <div className="db-loading-state"><div className="db-spinner-lg" /></div>
+          ) : galleries.length === 0 ? (
+            // ── Empty state ─────────────────────────────────────────────────
+            <div className="db-empty-root">
+              <div className="db-empty-bg" style={{ backgroundImage: `url(${ghostBg})` }} />
+              <div className="db-empty-content">
+                <div className="db-empty-icon"><FolderOpen size={32} /></div>
+                <h2 className="db-empty-h2">Your first collection<br />starts here.</h2>
+                <p className="db-empty-body">
+                  Create a collection, upload your event photos, and share a single QR code.
+                  Guests find themselves in seconds.
+                </p>
+                {!atLimit ? (
+                  <button
+                    id="empty-state-new-collection"
+                    className="db-btn-primary db-btn-primary-lg"
+                    onClick={() => setShowNewModal(true)}
+                  >
+                    <Plus size={18} />
+                    Create Your First Collection
+                  </button>
+                ) : (
+                  <button className="db-btn-ghost-sm" onClick={() => navigate('/subscribe')}>
+                    Upgrade to create collections
+                  </button>
+                )}
+                <div className="db-empty-ghost-wrap">
+                  <div className="db-empty-ghost-label">Here's what a collection looks like:</div>
+                  <GhostCollectionCard />
+                </div>
+              </div>
+            </div>
+          ) : (
+            // ── Populated grid ───────────────────────────────────────────────
+            <div className="db-collection-grid">
+              {galleries.map(gallery => (
+                <CollectionCard
+                  key={gallery.id}
+                  gallery={gallery}
+                  onOpen={setActiveGallery}
+                  onQR={setQrGallery}
+                  onDelete={setConfirmDelete}
+                />
+              ))}
+              {/* Persistent ghost "new" card */}
+              {!atLimit && <AddCollectionCard onClick={() => setShowNewModal(true)} />}
+            </div>
+          )}
+        </div>
+      </>
+    );
   };
 
   return (
-    <>
-    <div className="container fade">
+    <div className="db-root">
+      <Sidebar {...sidebarProps} />
+      <main className="db-main">
+        {renderCanvas()}
+      </main>
 
-      {/* No-face-profile prompt banner */}
-      {!bannerDismissed && user && !user.has_face_encoding && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          flexWrap: 'wrap',
-          background: 'rgba(201,169,110,0.06)',
-          border: '1px solid rgba(201,169,110,0.25)',
-          padding: '14px 20px',
-          marginBottom: '2.5rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--gold)' }}>
-            <UserCircle2 size={18} />
-            <span style={{ fontSize: '0.85rem', fontWeight: 400, letterSpacing: '0.02em' }}>
-              Your account has no face photo yet — AI sorting won't work until you add one.
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={() => navigate('/signup')}
-              className="btn-primary"
-              style={{ fontSize: '0.75rem', padding: '0.4rem 1rem' }}
-            >
-              Add Face Photo
-            </button>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}
-              title="Dismiss"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
+      {/* Modals */}
+      {showNewModal && (
+        <NewCollectionModal
+          onClose={() => setShowNewModal(false)}
+          onCreated={fetchAll}
+        />
       )}
-
-      {!activeGallery ? (
-        <>
-          <header className="page-header">
-            <div>
-              <div className="page-eyebrow">Your workspace</div>
-              <div className="page-title">Collections</div>
-              <div className="page-sub">Organize and distribute your event photography</div>
-              {subStatus && (
-                <div className="usage-bar" style={{ marginTop: '1rem', marginBottom: 0 }}>
-                  <div className="bar-label">{subStatus.owned_galleries} / {subStatus.allowed_galleries} folders used</div>
-                  <div className="bar-track">
-                    <div className="bar-fill" style={{ width: `${Math.min(100, (subStatus.owned_galleries / subStatus.allowed_galleries) * 100)}%` }}></div>
-                  </div>
-                  {subStatus.owned_galleries >= subStatus.allowed_galleries && (
-                    <div className="bar-label" style={{ color: 'rgba(201,169,110,0.6)' }}>Limit reached</div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {subStatus?.can_create_gallery && (
-                <>
-                  <input 
-                    type="text" 
-                    placeholder="Folder Name..." 
-                    className="input-field" 
-                    style={{ marginBottom: 0, maxWidth: '200px' }}
-                    value={newGalleryName}
-                    onChange={(e) => setNewGalleryName(e.target.value)}
-                  />
-                  <button onClick={createGallery} className="btn-primary">
-                    New Collection
-                  </button>
-                </>
-              )}
-              <button 
-                onClick={() => navigate('/subscribe')} 
-                className="btn-upgrade"
-              >
-                ↑ {subStatus?.can_create_gallery ? 'Upgrade Plan' : 'Upgrade to Create More'}
-              </button>
-            </div>
-          </header>
-
-          <div className="folder-grid">
-            {galleries.map(g => (
-            <div key={g.id} className="folder-card" onClick={() => openGallery(g)} style={{ position: 'relative' }}>
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ marginBottom: '1.5rem', opacity: 0.4 }}>
-                  <path d="M6 12a2 2 0 012-2h8l3 4h13a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V12z" stroke="#c9a96e" strokeWidth="1.2"/>
-                </svg>
-                <div style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.4rem' }}>{g.name}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>View & Upload</div>
-                <div style={{ position: 'absolute', top: '2rem', right: '2rem', fontSize: '1rem', color: 'rgba(201,169,110,0.3)', transition: 'all 0.2s' }}>↗</div>
-                {/* QR button */}
-                <button
-                  title="Share QR Code"
-                  onClick={(e) => { e.stopPropagation(); setQrGallery(g); }}
-                  style={{
-                    position: 'absolute', bottom: '1.2rem', right: '3.2rem',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: 'rgba(201,169,110,0.5)', padding: '4px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'color 0.2s', borderRadius: '4px',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(201,169,110,0.9)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(201,169,110,0.5)'}
-                >
-                  <QrCode size={15} />
-                </button>
-                {/* Delete button — stops propagation so the card click doesn't fire */}
-                <button
-                  title="Delete collection"
-                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(g); }}
-                  style={{
-                    position: 'absolute', bottom: '1.2rem', right: '1.2rem',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: 'rgba(239,68,68,0.5)', padding: '4px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'color 0.2s',
-                    borderRadius: '4px',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(239,68,68,0.9)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(239,68,68,0.5)'}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-            {subStatus?.can_create_gallery && (
-              <div 
-                style={{
-                  background: 'transparent',
-                  border: '1px dashed rgba(255,255,255,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '0.8rem',
-                  color: 'var(--text-dim)',
-                  padding: '2rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onClick={() => document.querySelector('.input-field')?.focus()}
-              >
-                <span style={{ fontSize: '1.2rem', opacity: 0.4 }}>+</span> New Collection
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="fade">
-          <div className="page-breadcrumb">
-            <span className="bc-link" onClick={() => setActiveGallery(null)}>Collections</span>
-            <span className="breadcrumb-sep">/</span>
-            <span style={{ color: 'rgba(232,228,220,0.6)' }}>{activeGallery.name}</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '2rem' }}>
-            <div className="page-title" style={{ fontSize: '2rem' }}>{activeGallery.name}</div>
-          </div>
-          
-          <div className="upload-layout">
-            <div className="upload-main">
-              <div className="switcher-group">
-                <button
-                  className={`switcher-btn${activeTab === 'upload' ? ' active' : ''}`}
-                  onClick={() => setActiveTab('upload')}
-                >
-                  Upload
-                </button>
-                <button
-                  className={`switcher-btn${activeTab === 'photos' ? ' active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('photos');
-                    fetchGalleryPhotos(activeGallery);
-                  }}
-                >
-                  Photos & Favorites
-                </button>
-                <button
-                  className="switcher-btn"
-                  onClick={() => navigate(`/gallery/${activeGallery.access_link}`)}
-                >
-                  View Gallery
-                </button>
-              </div>
-
-              {activeTab === 'upload' && <GalleryUploader gallery={activeGallery} />}
-
-              {activeTab === 'photos' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                      {showFavoritesOnly
-                        ? `${galleryPhotos.filter(p => p.is_favorite).length} favorites selected for album`
-                        : `${galleryPhotos.length} photos · click ♥ to mark for album printing`}
-                    </div>
-                    <button
-                      onClick={() => setShowFavoritesOnly(f => !f)}
-                      style={{
-                        background: showFavoritesOnly ? 'rgba(201,169,110,0.15)' : 'transparent',
-                        border: `1px solid ${showFavoritesOnly ? 'rgba(201,169,110,0.4)' : 'var(--border)'}`,
-                        color: showFavoritesOnly ? 'var(--gold)' : 'var(--text-dim)',
-                        borderRadius: '6px', padding: '5px 12px', fontSize: '0.72rem',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <Heart size={13} fill={showFavoritesOnly ? 'currentColor' : 'none'} />
-                      {showFavoritesOnly ? 'Show All' : 'Favorites Only'}
-                    </button>
-                  </div>
-
-                  {loadingPhotos ? (
-                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>Loading photos…</div>
-                  ) : galleryPhotos.length === 0 ? (
-                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>No photos yet. Upload some first.</div>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
-                      {galleryPhotos
-                        .filter(p => !showFavoritesOnly || p.is_favorite)
-                        .map(photo => {
-                          const thumb = photo.url.includes('/upload/')
-                            ? photo.url.replace('/upload/', '/upload/c_fill,w_280,h_280,q_auto/')
-                            : photo.url;
-                          return (
-                            <div key={photo.id} style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', borderRadius: '4px' }}>
-                              <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
-                              <button
-                                onClick={() => toggleFavorite(photo)}
-                                disabled={favoritingId === photo.id}
-                                title={photo.is_favorite ? 'Remove from favorites' : 'Mark as favorite'}
-                                style={{
-                                  position: 'absolute', top: '6px', right: '6px',
-                                  background: 'rgba(0,0,0,0.55)', border: 'none',
-                                  borderRadius: '50%', width: '30px', height: '30px',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  cursor: 'pointer', transition: 'all 0.15s',
-                                  color: photo.is_favorite ? '#ef4444' : 'rgba(255,255,255,0.7)',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.55)'}
-                              >
-                                <Heart size={14} fill={photo.is_favorite ? 'currentColor' : 'none'} />
-                              </button>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            <div className="sidebar-panel">
-              <div className="panel-label">Shared Access</div>
-              <div className="access-code">
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeGallery.access_link}</span>
-                <button onClick={() => copyLink(activeGallery.access_link)} className="copy-btn">
-                  {copied ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: 1.7, fontWeight: 300 }}>
-                Anyone with this link can access the public gallery and find their faces via AI face matching.
-              </div>
-              <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                <div className="panel-label">Quick Link</div>
-                <button 
-                  className="btn-ghost" 
-                  style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem', marginBottom: '8px' }}
-                  onClick={() => {
-                    const fullLink = `${window.location.origin}/gallery/${activeGallery.access_link}`;
-                    navigator.clipboard.writeText(fullLink);
-                  }}
-                >
-                  Share Gallery Link →
-                </button>
-                <button
-                  className="btn-ghost"
-                  style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                  onClick={() => setQrGallery(activeGallery)}
-                >
-                  <QrCode size={14} /> Show Event QR Code
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {confirmDelete && (
+        <DeleteModal gallery={confirmDelete} onConfirm={deleteGallery} onCancel={() => setConfirmDelete(null)} />
+      )}
+      {qrGallery && (
+        <QRModal galleryName={qrGallery.name} accessLink={qrGallery.access_link} onClose={() => setQrGallery(null)} />
       )}
     </div>
+  );
+}
 
-    {/* ── QR Code Modal ── */}
-    {qrGallery && (
-      <QRModal
-        galleryName={qrGallery.name}
-        accessLink={qrGallery.access_link}
-        onClose={() => setQrGallery(null)}
-      />
-    )}
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+function Sidebar({ user, initials, subStatus, usagePercent, activeNav, setActiveNav, navigate, logout, atLimit }) {
+  const NAV = [
+    { id: 'collections', icon: FolderOpen, label: 'Collections' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'account', icon: User, label: 'Account' },
+  ];
 
-    {/* ── Delete Confirmation Modal ── */}
-    {confirmDelete && (
-      <div
-        onClick={() => setConfirmDelete(null)}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            background: '#1a1814', border: '1px solid rgba(239,68,68,0.3)',
-            borderRadius: '12px', padding: '2rem 2.5rem', maxWidth: '400px', width: '90%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem', color: 'rgba(239,68,68,0.9)' }}>
-            <Trash2 size={18} />
-            <span style={{ fontWeight: 600, fontSize: '1rem' }}>Delete Collection</span>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', lineHeight: 1.7, marginBottom: '1.75rem' }}>
-            Are you sure you want to delete <strong style={{ color: 'var(--text)' }}>{confirmDelete.name}</strong>?
-            This will permanently remove all photos and cannot be undone.
-          </p>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="btn-ghost"
-              style={{ fontSize: '0.8rem', padding: '0.5rem 1.2rem' }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => deleteGallery(confirmDelete)}
-              style={{
-                background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-                color: 'rgba(239,68,68,0.9)', borderRadius: '6px',
-                padding: '0.5rem 1.2rem', fontSize: '0.8rem', cursor: 'pointer',
-                transition: 'all 0.2s', fontWeight: 500,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
-            >
-              Delete Permanently
-            </button>
-          </div>
-        </div>
+  return (
+    <aside className="db-sidebar">
+      {/* Wordmark */}
+      <div className="db-sidebar-brand">
+        <div className="db-sidebar-logo">Fr<span className="db-gold">a</span>my</div>
       </div>
-    )}
-    </>
+
+      {/* Nav */}
+      <nav className="db-sidebar-nav" aria-label="Dashboard navigation">
+        {NAV.map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            id={`nav-${id}`}
+            className={`db-nav-item ${activeNav === id ? 'active' : ''}`}
+            onClick={() => setActiveNav(id)}
+            aria-current={activeNav === id ? 'page' : undefined}
+          >
+            <Icon size={17} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div style={{ flex: 1 }} />
+
+      {/* Plan usage */}
+      {subStatus && (
+        <div className="db-sidebar-usage">
+          <div className="db-usage-header">
+            <span className="db-usage-label">Collections</span>
+            <span className="db-usage-count">{subStatus.owned_galleries}/{subStatus.allowed_galleries}</span>
+          </div>
+          <div className="db-usage-track">
+            <div
+              className={`db-usage-fill ${atLimit ? 'at-limit' : ''}`}
+              style={{ width: `${usagePercent}%` }}
+            />
+          </div>
+          {atLimit ? (
+            <button className="db-sidebar-upgrade" onClick={() => navigate('/subscribe')}>
+              <Zap size={12} /> Upgrade Plan
+            </button>
+          ) : (
+            <div className="db-usage-note">{subStatus.allowed_galleries - subStatus.owned_galleries} remaining</div>
+          )}
+        </div>
+      )}
+
+      {/* User row */}
+      <div className="db-sidebar-user">
+        <div className="db-user-avatar-wrap">
+          <div className="db-user-avatar">{initials}</div>
+          {user && !user.has_face_encoding && (
+            <div
+              className="db-face-nudge"
+              title="Add your face photo to enable AI matching"
+              onClick={() => navigate('/signup?mode=update')}
+              role="button"
+              tabIndex={0}
+              aria-label="Add face photo"
+            >
+              <UserCircle2 size={11} />
+            </div>
+          )}
+        </div>
+        <div className="db-user-info">
+          <div className="db-user-name">{user?.name || 'Photographer'}</div>
+          <div className="db-user-sub">{user?.email || ''}</div>
+        </div>
+        <button className="db-logout-btn" onClick={logout} title="Sign out" aria-label="Sign out">
+          <LogOut size={15} />
+        </button>
+      </div>
+    </aside>
   );
 }

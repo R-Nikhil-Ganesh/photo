@@ -36,20 +36,13 @@ export default function QRModal({ galleryName, accessLink, onClose }) {
 
   return (
     <div
+      className="modal-backdrop"
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
     >
       <div
+        className="modal-card"
         onClick={e => e.stopPropagation()}
-        style={{
-          background: '#1a1814', border: '1px solid rgba(201,169,110,0.2)',
-          borderRadius: '12px', padding: '2rem 2.5rem', maxWidth: '380px', width: '90%',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5)', textAlign: 'center',
-        }}
+        style={{ maxWidth: '380px', textAlign: 'center' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
@@ -58,7 +51,8 @@ export default function QRModal({ galleryName, accessLink, onClose }) {
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}
+            className="icon-button"
+            aria-label="Close QR code dialog"
           >
             <X size={18} />
           </button>
@@ -82,7 +76,7 @@ export default function QRModal({ galleryName, accessLink, onClose }) {
         </div>
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-          Guests scan this to register and get notified when their photos go live.
+          Guests can scan this code to open the event gallery directly on their phones.
         </p>
 
         <div style={{ display: 'flex', gap: '8px' }}>

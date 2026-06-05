@@ -56,7 +56,7 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
       setProgress(prev => ({ ...prev, current: i + 1 }));
 
       try {
-        // 1. Resize large images before detection — improves speed and recall
+        // 1. Resize large images before detection to improve speed and recall
         const image = await faceapi.bufferToImage(file);
         const canvas = document.createElement('canvas');
         const MAX_DIM = 1280;
@@ -74,7 +74,7 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
           if (detections.length > 0) break;
         }
 
-        // 3. Upload to Cloudinary regardless of face count — photos without faces still belong in the gallery
+        // 3. Upload to Cloudinary regardless of face count because photos without faces still belong in the gallery
         if (!cloudName) {
           throw new Error("Cloudinary configuration (VITE_CLOUDINARY_CLOUD_NAME) is missing in environment!");
         }
@@ -111,8 +111,8 @@ export default function GalleryUploader({ gallery, onUploadComplete }) {
           faces,
         }, { headers: { Authorization: `Bearer ${token}` } });
 
-        const faceNote = detections.length === 0 ? ' (no faces detected)' : ` · ${detections.length} face${detections.length > 1 ? 's' : ''}`;
-        setResults(prev => [...prev, { name: file.name, status: detections.length === 0 ? 'warning' : 'success', message: detections.length === 0 ? 'Uploaded — no faces found' : undefined, faceNote }]);
+        const faceNote = detections.length === 0 ? ' (no faces detected)' : ` - ${detections.length} face${detections.length > 1 ? 's' : ''}`;
+        setResults(prev => [...prev, { name: file.name, status: detections.length === 0 ? 'warning' : 'success', message: detections.length === 0 ? 'Uploaded - no faces found' : undefined, faceNote }]);
 
       } catch (err) {
         console.error(err);

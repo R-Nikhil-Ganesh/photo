@@ -35,7 +35,7 @@ export default function UploadGallery() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--spacing-md)' }}>
           <UploadCloud size={48} color="var(--primary)" />
         </div>
-        <h2 className="text-gradient">Create a Event</h2>
+        <h2 className="text-gradient">Create an Event</h2>
         <p>Host a new gallery and generate a unique Framy link for your guests.</p>
 
         {!accessLink ? (

@@ -147,7 +147,7 @@ export default function AdminDashboard() {
           <StatCard icon={<Users size={20} />}      label="Subscribed"      value={stats.subscribed}     color="#22c55e" />
           <StatCard icon={<FolderOpen size={20} />} label="Total Folders"   value={stats.total_folders}  color="#c9a96e" />
           <StatCard icon={<ImageIcon size={20} />}  label="Total Photos"    value={stats.total_photos}   color="#c9a96e" />
-          <StatCard icon={<IndianRupee size={20} />} label="Est. Revenue"   value={`₹${stats.total_revenue}`} color="#22c55e" />
+          <StatCard icon={<IndianRupee size={20} />} label="Est. Revenue"   value={`Rs ${stats.total_revenue}`} color="#22c55e" />
         </div>
       )}
 
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
                   <div>
                     <p style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text)' }}>{req.user_email}</p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Folders requested: {req.requested_folders}</p>
-                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', color: 'var(--gold)', letterSpacing: '0.04em' }}>View Screenshot ↗</a>
+                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', color: 'var(--gold)', letterSpacing: '0.04em' }}>View Screenshot</a>
                   </div>
                   <div className="flex gap-sm">
                     <button onClick={() => processRequest(req.id, 'approve')} style={{ background: '#22c55e', color: '#050508', border: 'none', padding: '7px 14px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
                 <div key={g.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <div>
                     <p style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text)' }}>{g.name}</p>
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{g.owner_email} · {g.photo_count} photos</p>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{g.owner_email} - {g.photo_count} photos</p>
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', opacity: 0.6, fontFamily: 'monospace', letterSpacing: '0.05em' }}>/{g.access_link}</p>
                   </div>
                   <button
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
                   <div>
                     <p style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text-muted)' }}>{req.user_email}</p>
                     <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Folders: {req.requested_folders}</p>
-                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', color: 'var(--gold)', opacity: 0.7, letterSpacing: '0.04em' }}>Screenshot ↗</a>
+                    <a href={req.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', color: 'var(--gold)', opacity: 0.7, letterSpacing: '0.04em' }}>Screenshot</a>
                   </div>
                   <span style={{
                     padding: '4px 10px', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',

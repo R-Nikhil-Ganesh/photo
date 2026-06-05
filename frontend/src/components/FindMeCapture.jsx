@@ -143,7 +143,7 @@ export default function FindMeCapture({ accessLink }) {
                       cursor: 'pointer'
                     }}
                   >
-                    ✕
+                    X
                   </button>
                 </div>
               ) : (
