@@ -5,36 +5,46 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─── Scroll-reveal animation base ─────────────────────────────────────────── */
+/* Content slides in from the right — matching the ribbon's inward sweep       */
 .lp-hero-grid,
 .lp-claims-bar,
-.lp-steps-section,
-.lp-product,
+.lp-section.lp-steps-section,
+.lp-section.lp-product,
+.lp-section.lp-problem,
 .lp-story-section,
 .lp-pricing,
 .lp-cta-section {
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity   0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    filter    0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Hidden state: faded + blurred + scaled */
 .lp-hero-grid:not(.lp-in),
 .lp-claims-bar:not(.lp-in),
-.lp-steps-section:not(.lp-in),
-.lp-product:not(.lp-in),
+.lp-section.lp-steps-section:not(.lp-in),
+.lp-section.lp-product:not(.lp-in),
+.lp-section.lp-problem:not(.lp-in),
 .lp-story-section:not(.lp-in),
 .lp-pricing:not(.lp-in),
 .lp-cta-section:not(.lp-in) {
   opacity: 0;
-  transform: translateY(40px);
+  filter: blur(8px);
+  transform: translateY(12px) scale(0.98);
 }
 
+/* Revealed state */
 .lp-hero-grid.lp-in,
 .lp-claims-bar.lp-in,
-.lp-steps-section.lp-in,
-.lp-product.lp-in,
+.lp-section.lp-steps-section.lp-in,
+.lp-section.lp-product.lp-in,
+.lp-section.lp-problem.lp-in,
 .lp-story-section.lp-in,
 .lp-pricing.lp-in,
 .lp-cta-section.lp-in {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0) translateY(0);
 }
 
 /* ─── Root container ─────────────────────────────────────────────────────── */
@@ -191,6 +201,7 @@
 .lp-section {
   padding: 100px 0;
   position: relative;
+  z-index: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -199,14 +210,15 @@
 .lp-hero {
   position: relative;
   min-height: 100vh;
-  padding-top: 130px;
+  padding-top: 80px;
   padding-bottom: 60px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: stretch;
   overflow: hidden;
-  background-color: #050508;
+  /* background is lp-root's #050508; keeping hero transparent lets ribbon show */
+  background-color: transparent;
 }
 
 /* Background grid overlay + warm vignette */
@@ -235,6 +247,35 @@
   -webkit-mask-image: radial-gradient(circle at 60% 40%, black 30%, transparent 80%);
 }
 
+/* ─── Full-page scroll-driven ribbon canvas ───────────────────────────────── */
+/* Sits at position:absolute on lp-root so it scrolls WITH page content.
+   Width is 100%; height is set to 100% of the document's scroll height via JS
+   (we set it to the full root height so the SVG viewBox maps correctly).
+   z-index:0; sections sit at z-index:1+ above it. */
+.lp-ribbon-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+  overflow: visible;
+  animation: lp-ribbon-breathe 6s ease-in-out infinite;
+}
+
+@keyframes lp-ribbon-breathe {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.72; }
+}
+
+/* Ensure lp-root is the positioning context for the canvas */
+.lp-root {
+  position: relative;
+  overflow-x: hidden;
+}
+
 .lp-hero-cursor-glow {
   position: absolute;
   width: 600px;
@@ -255,28 +296,6 @@
   align-items: center;
   position: relative;
   z-index: 1;
-}
-
-/* Eyebrow pill */
-.lp-eyebrow-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--gold-border);
-  border-radius: 999px;
-  background: rgba(201, 169, 110, 0.08);
-  color: var(--gold);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  margin-bottom: 28px;
-  animation: lp-float 3s ease-in-out infinite;
-}
-
-@keyframes lp-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
 }
 
 .lp-hero-content {
@@ -440,7 +459,7 @@
   border-bottom: 1px solid var(--border);
   padding: 24px 0;
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
 .lp-claims-inner {
@@ -1273,6 +1292,8 @@
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 100px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .lp-story-grid {
@@ -1653,6 +1674,8 @@
   border-top: 1px solid var(--border);
   padding: 48px 0 36px;
   background: rgba(5, 5, 8, 0.6);
+  position: relative;
+  z-index: 1;
 }
 
 .lp-footer-inner {

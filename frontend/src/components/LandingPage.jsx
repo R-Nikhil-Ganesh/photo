@@ -5,25 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { Search, QrCode, Download, Camera, Check, ArrowRight, Zap, Shield, Star, ChevronDown, User } from 'lucide-react';
 import phoneGalleryUi from '../assets/phone_gallery_ui.png';
 
-// ─── Intersection Observer hook for scroll animations ─────────────────────────
-function useInView(threshold = 0.15) {
-  const ref = useRef(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-
-  return [ref, inView];
-}
-
 // ─── Plan data ────────────────────────────────────────────────────────────────
 const PLANS = [
   { id: 'basic', name: 'Basic', collections: 1, price: 50, popular: false,
@@ -37,11 +18,18 @@ const PLANS = [
 ];
 
 // ─── Main LandingPage component ───────────────────────────────────────────────
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [activePlan, setActivePlan] = useState('pro');
   const heroRef = useRef(null);
+  const rootRef = useRef(null);
+  const path1Ref = useRef(null);
+  const path2Ref = useRef(null);
+  const path3Ref = useRef(null);
+  const path4Ref = useRef(null);
+  const path5Ref = useRef(null);
 
   // States for interactive mockup demonstrations
   const [deepDiveTab, setDeepDiveTab] = useState('all');
@@ -62,6 +50,244 @@ export default function LandingPage() {
     setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   }, []);
 
+  // ── Section reveal state ───────────────────────────────────────────────────
+  // Declared BEFORE the ribbon useEffect so setters are in scope for the
+  // scroll-driven checkpoint handler that references them via a stable ref.
+  const [trustRevealed,        setTrustRevealed]        = useState(false);
+  const [problemRevealed,      setProblemRevealed]      = useState(false);
+  const [stepsRevealed,        setStepsRevealed]        = useState(false);
+  const [productRevealed,      setProductRevealed]      = useState(false);
+  const [testimonialsRevealed, setTestimonialsRevealed] = useState(false);
+  const [pricingRevealed,      setPricingRevealed]      = useState(false);
+  const [ctaRevealed,          setCtaRevealed]          = useState(false);
+
+  // Section element refs
+  const heroRef2        = useRef(null);
+  const trustRef        = useRef(null);
+  const problemRef      = useRef(null);
+  const productRef      = useRef(null);
+  const stepsRef        = useRef(null);
+  const testimonialsRef = useRef(null);
+  const pricingRef      = useRef(null);
+  const ctaRef          = useRef(null);
+
+  // Stable ref holding the checkpoint setter fns so the useEffect below
+  // can call them without being added to its dependency array
+  const revealSettersRef = useRef(null);
+  revealSettersRef.current = {
+    trust:        setTrustRevealed,
+    problem:      setProblemRevealed,
+    steps:        setStepsRevealed,
+    product:      setProductRevealed,
+    testimonials: setTestimonialsRevealed,
+    pricing:      setPricingRevealed,
+    cta:          setCtaRevealed,
+  };
+
+  // ── Ribbon animation: unified rAF state machine ──────────────────────────
+  // ONE tick() loop handles all three phases so there can be no race conditions:
+  //  • drawIn  — sweeps ribbons in from the right edge over ~2s
+  //  • idle    — sin-wave spiral-pulse when the user hasn't scrolled yet
+  //  • scroll  — extends the ribbon proportional to scroll position
+  //
+  // The scroll listener is attached IMMEDIATELY. Any scroll event switches the
+  // phase to 'scroll' on the next tick — no setTimeout delay means no jump.
+  // Section reveals use scroll-fraction thresholds (reliable, no getPointAtLength).
+  useEffect(() => {
+    const HERO_FRAC    = 0.08;           // fraction of path visible in the hero
+    const DRAW_MS      = 1800;           // draw-in duration for the first ribbon
+    const STAGGER      = [0, 160, 320, 80, 240]; // per-ribbon draw-in delay (ms)
+    const ALL_DONE_MS  = DRAW_MS + 320 + 50;     // when last ribbon finishes
+
+    const pathDefs = [
+      { ref: path1Ref, lag: 0,    ampFrac: 0.12, speed: 0.85, wavePhase: 0                },
+      { ref: path2Ref, lag: 0.03, ampFrac: 0.09, speed: 1.05, wavePhase: Math.PI * 0.4   },
+      { ref: path3Ref, lag: 0.06, ampFrac: 0.14, speed: 0.75, wavePhase: Math.PI * 0.8   },
+      { ref: path4Ref, lag: 0.02, ampFrac: 0.07, speed: 1.15, wavePhase: Math.PI * 0.2   },
+      { ref: path5Ref, lag: 0.05, ampFrac: 0.10, speed: 0.95, wavePhase: Math.PI * 0.6   },
+    ];
+
+    let pathsReady = false;
+    let paths = [];
+
+    // Use getPointAtLength to precisely trigger section reveals based on
+    // the true SVG Y-coordinate of the primary ribbon's tip.
+    const CHECKPOINTS = [
+      { key: 'trust',        svgY: 900  },
+      { key: 'problem',      svgY: 1400 },
+      { key: 'steps',        svgY: 2000 },
+      { key: 'product',      svgY: 2600 },
+      { key: 'testimonials', svgY: 3400 },
+      { key: 'pricing',      svgY: 4000 },
+      { key: 'cta',          svgY: 4700 },
+    ];
+    const revealed = new Set();
+
+    const getActiveTargetFrac = () => {
+      // Find the furthest section that has entered the middle of the viewport
+      const scrollY = window.scrollY + window.innerHeight * 0.5;
+      const sections = [
+        { el: trustRef.current,        frac: 0.20 },
+        { el: problemRef.current,      frac: 0.30 },
+        { el: stepsRef.current,        frac: 0.45 },
+        { el: productRef.current,      frac: 0.55 },
+        { el: testimonialsRef.current, frac: 0.70 },
+        { el: pricingRef.current,      frac: 0.85 },
+        { el: ctaRef.current,          frac: 1.0  },
+      ];
+      let bestFrac = 0.0;
+      for (const { el, frac } of sections) {
+        if (el && scrollY >= el.offsetTop) {
+          bestFrac = frac;
+        }
+      }
+      return bestFrac;
+    };
+
+    const triggerCheckpoints = (drawnLength) => {
+      const primaryEl = path1Ref.current;
+      if (!primaryEl) return;
+      try {
+        const pt = primaryEl.getPointAtLength(Math.min(drawnLength, paths[0].total));
+        CHECKPOINTS.forEach(({ key, svgY }) => {
+          if (!revealed.has(key) && pt.y >= svgY) {
+            revealed.add(key);
+            revealSettersRef.current?.[key]?.(true);
+          }
+        });
+      } catch (_) { /* ignore if SVG not ready */ }
+    };
+
+    // ── State machine ──────────────────────────────────────────────────────
+    let phase          = 'drawIn'; // 'drawIn' | 'idle' | 'scroll'
+    let drawInT0       = null;     // timestamp when drawIn started
+    let idleT0         = null;     // timestamp when idle started
+    let rafId;
+
+    let targetFrac = 0;
+    let currentFrac = 0;
+    let lastTs = null;
+
+    const tick = (ts) => {
+      if (!lastTs) lastTs = ts;
+      const dt = Math.min(ts - lastTs, 64); // cap dt at 64ms to prevent huge jumps on tab switch
+      lastTs = ts;
+      if (!pathsReady) {
+        // Wait until all paths have a valid computed length (> 0).
+        // On some browsers, getTotalLength() is 0 on the exact frame of mount.
+        let allReady = true;
+        paths = pathDefs.map((def, i) => {
+          const el = def.ref.current;
+          let total = 0;
+          if (el && el.getTotalLength) {
+            total = el.getTotalLength();
+          }
+          if (total === 0) {
+            allReady = false;
+          }
+          return { ...def, el, total, heroOffset: total * (1 - HERO_FRAC), stagger: STAGGER[i] };
+        });
+
+        if (!allReady) {
+          rafId = requestAnimationFrame(tick);
+          return;
+        }
+
+        pathsReady = true;
+        paths.forEach(p => {
+          if (p.el) {
+            p.el.style.strokeDasharray = p.total;
+            p.el.style.strokeDashoffset = p.total;
+          }
+        });
+      }
+
+      if (phase === 'drawIn') {
+        // ─ Sweep ribbons in from the right edge ─
+        if (!drawInT0) drawInT0 = ts;
+        const elapsed = ts - drawInT0;
+
+        paths.forEach(({ el, total, heroOffset, stagger }) => {
+          if (!el) return;
+          const t = Math.max(0, elapsed - stagger) / DRAW_MS;
+          // Ease-out cubic so the ribbon decelerates as it settles
+          const eased  = 1 - Math.pow(1 - Math.min(t, 1), 3);
+          el.style.strokeDashoffset = total - (total - heroOffset) * eased;
+        });
+
+        if (elapsed >= ALL_DONE_MS) {
+          phase  = 'idle';
+          idleT0 = null; // will be set on next idle frame
+        }
+
+      } else if (phase === 'idle') {
+        // ─ Spiral-pulse: each ribbon oscillates with its own sin wave ─
+        if (!idleT0) idleT0 = ts;
+        const t = (ts - idleT0) / 1000; // seconds
+
+        paths.forEach(({ el, total, heroOffset, ampFrac, speed, wavePhase }) => {
+          if (!el) return;
+          const amplitude = total * ampFrac;
+          const wave      = Math.sin(t * speed + wavePhase);
+          const offset    = heroOffset - amplitude * wave;
+          el.style.strokeDashoffset = Math.max(0, Math.min(total * 0.95, offset));
+        });
+
+      } else {
+        // ─ Checkpoint-driven: smoothly animate ribbon to active section's target ─
+        const newTarget = getActiveTargetFrac();
+        
+        if (newTarget === 0.0 && targetFrac > 0.0) {
+          // User scrolled all the way back up to hero. Fully reset the effect.
+          targetFrac = 0;
+          currentFrac = 0;
+          revealed.clear();
+          Object.values(revealSettersRef.current).forEach(setter => setter(false));
+          phase = 'drawIn';
+          drawInT0 = null;
+          idleT0 = null;
+        } else {
+          // Only allow targetFrac to increase so the ribbon never retracts on scroll up
+          targetFrac = Math.max(targetFrac, newTarget);
+        }
+        
+        // Time-independent lerp currentFrac towards targetFrac
+        const diff = targetFrac - currentFrac;
+        // ~0.08 at 60fps (16ms)
+        currentFrac += diff * (1 - Math.exp(-dt * 0.005));
+
+        paths.forEach(({ el, lag, heroOffset }) => {
+          if (!el) return;
+          // Each ribbon has a slight lag so they arrive sequentially
+          const progress = Math.min(Math.max(currentFrac - lag, 0) / (1 - lag), 1);
+          el.style.strokeDashoffset = heroOffset * (1 - progress);
+        });
+
+        // Trigger checkpoints using the primary ribbon's current drawn length
+        if (paths[0]) {
+          const primaryProgress = Math.min(Math.max(currentFrac - paths[0].lag, 0) / (1 - paths[0].lag), 1);
+          const drawnLength = paths[0].total - (paths[0].heroOffset * (1 - primaryProgress));
+          triggerCheckpoints(drawnLength);
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    // Switch to scroll phase on any scroll — happens BEFORE the setTimeout
+    // fired in the old code, so no more jump-to-bottom on early scroll.
+    const onScroll = () => { phase = 'scroll'; };
+
+    rafId = requestAnimationFrame(tick);
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
+
   const handleViewExample = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -72,16 +298,202 @@ export default function LandingPage() {
     }
   };
 
-  const [heroRef2, heroIn] = useInView(0.1);
-  const [trustRef, trustIn] = useInView(0.15);
-  const [productRef, productIn] = useInView(0.1);
-  const [stepsRef, stepsIn] = useInView(0.1);
-  const [testimonialsRef, testimonialsIn] = useInView(0.1);
-  const [pricingRef, pricingIn] = useInView(0.1);
-  const [ctaRef, ctaIn] = useInView(0.2);
+  // Convenient aliases used in JSX
+  const heroIn         = true;
+  const trustIn        = trustRevealed;
+  const problemIn      = problemRevealed;
+  const stepsIn        = stepsRevealed;
+  const productIn      = productRevealed;
+  const testimonialsIn = testimonialsRevealed;
+  const pricingIn      = pricingRevealed;
+  const ctaIn          = ctaRevealed;
 
   return (
-    <div className="lp-root">
+    <div className="lp-root" ref={rootRef}>
+
+      {/* ── FULL-PAGE RIBBON SVG OVERLAY ──────────────────────────────────── */}
+      {/* viewBox: 1440 wide × 5400 tall. Paths originate from x=1440 (right
+          screen edge) and spiral inward-leftward across the full page height.
+          The hero draw-in brings the ribbon onto screen from the edge. Scroll
+          then extends it section by section like a pen drawing the page. */}
+      <svg
+        className="lp-ribbon-canvas"
+        viewBox="0 0 1440 5400"
+        preserveAspectRatio="none"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="rb-grad-1" x1="1440" y1="300" x2="480" y2="5100" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#fffdf5" stopOpacity="1"   />
+            <stop offset="6%"   stopColor="#f5d898" stopOpacity="0.95"/>
+            <stop offset="22%"  stopColor="#c9a96e" stopOpacity="0.82"/>
+            <stop offset="48%"  stopColor="#a07d45" stopOpacity="0.55"/>
+            <stop offset="74%"  stopColor="#6b5028" stopOpacity="0.28"/>
+            <stop offset="100%" stopColor="#050508" stopOpacity="0"  />
+          </linearGradient>
+          <linearGradient id="rb-grad-2" x1="1440" y1="380" x2="500" y2="5130" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#fff3d0" stopOpacity="0.9" />
+            <stop offset="14%"  stopColor="#e8c97a" stopOpacity="0.8" />
+            <stop offset="38%"  stopColor="#b59253" stopOpacity="0.58"/>
+            <stop offset="68%"  stopColor="#7a5b28" stopOpacity="0.27"/>
+            <stop offset="100%" stopColor="#050508" stopOpacity="0"  />
+          </linearGradient>
+          <linearGradient id="rb-grad-3" x1="1440" y1="200" x2="460" y2="5190" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#ffeebb" stopOpacity="0.75"/>
+            <stop offset="18%"  stopColor="#d4a84b" stopOpacity="0.65"/>
+            <stop offset="52%"  stopColor="#9b7535" stopOpacity="0.37"/>
+            <stop offset="86%"  stopColor="#4a3518" stopOpacity="0.12"/>
+            <stop offset="100%" stopColor="#050508" stopOpacity="0"  />
+          </linearGradient>
+          <linearGradient id="rb-grad-4" x1="1440" y1="320" x2="490" y2="5020" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#fff8e7" stopOpacity="1"   />
+            <stop offset="11%"  stopColor="#e8c97a" stopOpacity="0.9" />
+            <stop offset="42%"  stopColor="#9b7535" stopOpacity="0.48"/>
+            <stop offset="78%"  stopColor="#5c4020" stopOpacity="0.18"/>
+            <stop offset="100%" stopColor="#050508" stopOpacity="0"  />
+          </linearGradient>
+          <linearGradient id="rb-grad-5" x1="1440" y1="360" x2="510" y2="4940" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#ffffff" stopOpacity="1"   />
+            <stop offset="9%"   stopColor="#fff3d0" stopOpacity="0.95"/>
+            <stop offset="38%"  stopColor="#c9a96e" stopOpacity="0.65"/>
+            <stop offset="73%"  stopColor="#7a5b28" stopOpacity="0.22"/>
+            <stop offset="100%" stopColor="#050508" stopOpacity="0"  />
+          </linearGradient>
+
+          {/* Layered outer glow */}
+          <filter id="rb-glow" x="-30%" y="-3%" width="160%" height="106%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="22" result="blur1" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7"  result="blur2" />
+            <feMerge>
+              <feMergeNode in="blur1" />
+              <feMergeNode in="blur2" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          {/* Tight spine glow */}
+          <filter id="rb-glow-sharp" x="-18%" y="-3%" width="136%" height="106%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/*
+          All paths start at x=1440 (right screen edge) and spiral inward.
+          Each curve makes tight S-turns — first sweeping left into the hero,
+          then winding down with undulating S-curves as it descends the page.
+          This creates the visual of a golden ribbon unspooling from the edge.
+        */}
+
+        {/* Ribbon 1 — broadest, warm amber glow */}
+        <path
+          ref={path1Ref}
+          d="
+            M 1440 300
+            C 1280 360, 1120 440, 980 620
+            C 840 800, 820 1020, 960 1220
+            C 1100 1420, 1180 1600, 1060 1840
+            C 940 2080, 680 2220, 540 2480
+            C 400 2740, 400 2960, 580 3180
+            C 760 3400, 980 3520, 900 3780
+            C 820 4040, 560 4180, 420 4460
+            C 280 4740, 360 4980, 640 5180
+          "
+          stroke="url(#rb-grad-1)"
+          strokeWidth="46"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#rb-glow)"
+        />
+
+        {/* Ribbon 2 — mid-weight, enters slightly lower */}
+        <path
+          ref={path2Ref}
+          d="
+            M 1440 400
+            C 1270 455, 1100 535, 960 710
+            C 820 885, 800 1100, 940 1290
+            C 1080 1480, 1160 1660, 1040 1890
+            C 920 2120, 670 2255, 530 2515
+            C 390 2775, 390 2995, 570 3210
+            C 750 3425, 965 3545, 885 3805
+            C 805 4065, 545 4205, 405 4485
+            C 265 4765, 345 5005, 625 5205
+          "
+          stroke="url(#rb-grad-2)"
+          strokeWidth="30"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#rb-glow)"
+        />
+
+        {/* Ribbon 3 — outer sweep, enters higher */}
+        <path
+          ref={path3Ref}
+          d="
+            M 1440 200
+            C 1260 275, 1080 380, 920 580
+            C 760 780, 760 1020, 920 1220
+            C 1080 1420, 1180 1620, 1040 1870
+            C 900 2120, 630 2250, 480 2530
+            C 330 2810, 330 3040, 530 3260
+            C 730 3480, 960 3600, 870 3870
+            C 780 4140, 510 4280, 360 4560
+            C 210 4840, 290 5080, 590 5280
+          "
+          stroke="url(#rb-grad-3)"
+          strokeWidth="20"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#rb-glow)"
+        />
+
+        {/* Ribbon 4 — fine accent, bright inner shine */}
+        <path
+          ref={path4Ref}
+          d="
+            M 1440 340
+            C 1275 400, 1110 480, 970 655
+            C 830 830, 810 1050, 950 1245
+            C 1090 1440, 1170 1620, 1050 1855
+            C 930 2090, 675 2225, 535 2485
+            C 395 2745, 395 2965, 575 3185
+            C 755 3405, 970 3525, 892 3785
+            C 814 4045, 554 4185, 414 4465
+            C 274 4745, 354 4985, 634 5185
+          "
+          stroke="url(#rb-grad-4)"
+          strokeWidth="11"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#rb-glow-sharp)"
+        />
+
+        {/* Ribbon 5 — luminous core highlight */}
+        <path
+          ref={path5Ref}
+          d="
+            M 1440 370
+            C 1273 428, 1108 510, 964 686
+            C 820 862, 805 1082, 946 1278
+            C 1087 1474, 1166 1654, 1046 1888
+            C 926 2122, 672 2258, 532 2518
+            C 392 2778, 392 2998, 572 3218
+            C 752 3438, 967 3558, 888 3818
+            C 809 4078, 549 4218, 409 4498
+            C 269 4778, 349 5018, 629 5218
+          "
+          stroke="url(#rb-grad-5)"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#rb-glow-sharp)"
+        />
+      </svg>
 
       {/* ── HERO ───────────────────────────────────────────────────────────── */}
       <section
@@ -98,12 +510,6 @@ export default function LandingPage() {
 
             {/* Left Column: Heading, Sub, CTAs, and Trust Strip */}
             <div className="lp-hero-content">
-              {/* Eyebrow pill */}
-              <div className="lp-eyebrow-pill">
-                <Zap size={11} />
-                AI-powered photo delivery for live events
-              </div>
-
               {/* Headline */}
               <h1 className="lp-hero-h1">
                 Your guests find<br />
@@ -191,7 +597,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── PROBLEM / PROMISE ──────────────────────────────────────────────── */}
-      <section className="lp-section lp-problem">
+      <section ref={problemRef} className={`lp-section lp-problem ${problemIn ? 'lp-in' : ''}`}>
         <div className="lp-container">
           <div className="lp-problem-grid">
             <div className="lp-problem-left">
